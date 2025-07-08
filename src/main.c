@@ -193,12 +193,30 @@ void update_player_timers(Actor* player) {
     }
 }
 
+void handle_projectile_collision(Actor* actor,
+                                 Projectile** projectiles,
+                                 size_t n_projectiles) {
+    for (size_t i = 0; i < n_projectiles; ++i) {
+        if (CheckCollisionCircles(actor->pos, actor->capsule_radius,
+                                  projectiles[i]->pos,
+                                  projectiles[i]->capsule_radius)) {
+            // damage the actor that collided with the projectile
+            actor->health -= projectiles[i]->damage;
+
+            // invalidate projectile
+            projectiles[i]->is_valid = false;
+        }
+    }
+}
+
 void draw_projectiles(Projectile** projectiles,
                       size_t n_projectiles,
                       Color color) {
     for (size_t i = 0; i < n_projectiles; ++i) {
-        DrawCircle(projectiles[i]->pos.x, projectiles[i]->pos.y,
-                   projectiles[i]->capsule_radius, color);
+        if (projectiles[i]->is_valid) {
+            DrawCircle(projectiles[i]->pos.x, projectiles[i]->pos.y,
+                       projectiles[i]->capsule_radius, color);
+        }
     }
 }
 
@@ -298,6 +316,17 @@ int main() {
                 handle_projectile_movement(enemy_projectiles[i], false);
             }
         }
+
+        // player collision with enemy bullets
+        handle_projectile_collision(&player, enemy_projectiles,
+                                    n_enemy_projectiles);
+        // enemy collision with player bullets
+        for (size_t i = 0; i < n_enemies; ++i) {
+            handle_projectile_collision(&enemies[i], player_projectiles,
+                                        n_player_projectiles);
+        }
+
+        // TODO: clean invalid actors and make room in buffers
 
         // draw
         BeginDrawing();
