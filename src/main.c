@@ -8,67 +8,129 @@
 #include "stdlib.h"
 #include "string.h"
 
-void handle_player_movement(Actor* player) {
+// move_actions: array of movement actions
+// [up, down, left, right]
+void handle_movement_action(Actor* actor, bool* move_actions) {
     bool is_updown_key_pressed = false;
     bool is_leftright_key_pressed = false;
 
     // apply speed if player is holding movement key
-    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
-        player->down_speed -= player->speed * player->acceleration;
-        player->down_speed = maxf(player->down_speed, -player->speed);
+    if (move_actions[0]) {
+        actor->down_speed -= actor->speed * actor->acceleration;
+        actor->down_speed = maxf(actor->down_speed, -actor->speed);
         is_updown_key_pressed = true;
     }
 
-    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
-        player->down_speed += player->speed * player->acceleration;
-        player->down_speed = minf(player->down_speed, player->speed);
+    if (move_actions[1]) {
+        actor->down_speed += actor->speed * actor->acceleration;
+        actor->down_speed = minf(actor->down_speed, actor->speed);
         is_updown_key_pressed = true;
     }
 
-    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
-        player->right_speed -= player->speed * player->acceleration;
-        player->right_speed = maxf(player->right_speed, -player->speed);
+    if (move_actions[2]) {
+        actor->right_speed -= actor->speed * actor->acceleration;
+        actor->right_speed = maxf(actor->right_speed, -actor->speed);
         is_leftright_key_pressed = true;
     }
 
-    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
-        player->right_speed += player->speed * player->acceleration;
-        player->right_speed = minf(player->right_speed, player->speed);
+    if (move_actions[3]) {
+        actor->right_speed += actor->speed * actor->acceleration;
+        actor->right_speed = minf(actor->right_speed, actor->speed);
         is_leftright_key_pressed = true;
     }
 
-    // apply speed damping if player is not holding movement key
+    // apply speed damping if actor is not holding movement key
     if (!is_updown_key_pressed) {
-        player->down_speed *= player->speed_damping;
+        actor->down_speed *= actor->speed_damping;
     }
 
     if (!is_leftright_key_pressed) {
-        player->right_speed *= player->speed_damping;
+        actor->right_speed *= actor->speed_damping;
     }
 
-    // make sure player can't escape screen boundaries
-    if (player->down_speed > 0 && (player->pos.y + player->down_speed +
-                                   player->capsule_radius) < SCREEN_HEIGHT) {
-        player->pos.y += player->down_speed;
+    // make sure actor can't escape screen boundaries
+    if (actor->down_speed > 0 && (actor->pos.y + actor->down_speed +
+                                  actor->capsule_radius) < SCREEN_HEIGHT) {
+        actor->pos.y += actor->down_speed;
     }
 
-    if (player->down_speed < 0 &&
-        (player->pos.y + player->down_speed - player->capsule_radius) > 0) {
-        player->pos.y += player->down_speed;
+    if (actor->down_speed < 0 &&
+        (actor->pos.y + actor->down_speed - actor->capsule_radius) > 0) {
+        actor->pos.y += actor->down_speed;
     }
 
-    if (player->right_speed > 0 && (player->pos.x + player->right_speed +
-                                    player->capsule_radius) < SCREEN_WIDTH) {
-        player->pos.x += player->right_speed;
+    if (actor->right_speed > 0 && (actor->pos.x + actor->right_speed +
+                                   actor->capsule_radius) < SCREEN_WIDTH) {
+        actor->pos.x += actor->right_speed;
     }
 
-    if (player->right_speed < 0 &&
-        (player->pos.x + player->right_speed - player->capsule_radius > 0)) {
-        player->pos.x += player->right_speed;
+    if (actor->right_speed < 0 &&
+        (actor->pos.x + actor->right_speed - actor->capsule_radius > 0)) {
+        actor->pos.x += actor->right_speed;
     }
 }
 
-void handle_projectile_movement(Actor* proj, bool shoot_upwards) {
+void handle_player_movement(Actor* player) {
+    bool move_actions[4] = {false};
+
+    // apply speed if player is holding movement key
+    if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
+        move_actions[0] = true;
+    }
+
+    if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
+        move_actions[1] = true;
+    }
+
+    if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
+        move_actions[2] = true;
+    }
+
+    if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
+        move_actions[3] = true;
+    }
+
+    handle_movement_action(player, move_actions);
+}
+
+void generate_enemy_actions(Actor* enemy,
+                            Projectile** projectiles,
+                            size_t* n_projectiles,
+                            size_t max_projecties) {
+    bool move_actions[4] = {false};
+    bool shoot = false;
+
+    if (GetRandomValue(0, 100) < 50) {
+        move_actions[0] = true;
+    }
+
+    if (GetRandomValue(0, 100) < 50) {
+        move_actions[1] = true;
+    }
+
+    if (GetRandomValue(0, 100) < 50) {
+        move_actions[2] = true;
+    }
+
+    if (GetRandomValue(0, 100) < 50) {
+        move_actions[3] = true;
+    }
+
+    if (GetRandomValue(0, 100) < 50) {
+        shoot = true;
+    }
+
+    if (*n_projectiles < max_projecties) {
+        if (GetRandomValue(0, 100) < 75) {
+            add_projectile(enemy, projectiles, n_projectiles, max_projecties,
+                           false);
+        }
+    }
+
+    handle_movement_action(enemy, move_actions);
+}
+
+void handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
     // handles projectile movement
     if (shoot_upwards) {
         proj->pos.y -= proj->speed;
@@ -82,28 +144,24 @@ void handle_projectile_movement(Actor* proj, bool shoot_upwards) {
     }
 }
 
-void add_projectile(Actor* player,
-                    Actor** projectiles,
+void add_projectile(Actor* actor,
+                    Projectile** projectiles,
                     size_t* n_projectiles,
-                    size_t max_projectiles) {
+                    size_t max_projectiles,
+                    bool spawn_below) {
     if (*n_projectiles <= max_projectiles) {
-        Actor* proj = malloc(sizeof(Actor));
-        if (!proj) {
-            perror("failed to allocate memory for player projectile");
-            return NULL;
+        Projectile* proj =
+            create_projectile(actor->pos, 10, 3, -10, 0, 0, 0, 10, true);
+
+        // set position of the projectile below or above the actor
+        // who launched it
+        if (spawn_below) {
+            proj->pos.y -= actor->capsule_radius;
+        } else {
+            proj->pos.y += actor->capsule_radius;
         }
-        memset(proj, 0, sizeof(proj));
 
-        proj->acceleration = 1;
-        proj->capsule_radius = 3;
-        proj->down_speed = -10;
-        proj->right_speed = 0;
-        proj->pos = player->pos;
-        proj->pos.y -= player->capsule_radius;
-        proj->speed = 10;
-        proj->speed_damping = 0;
-        proj->is_valid = true;
-
+        // register projectile
         projectiles[*n_projectiles] = proj;
         *n_projectiles += 1;
     }
@@ -115,7 +173,8 @@ void handle_player_shooting(Actor* player,
                             size_t max_projectiles) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
         if (!player->ongoing_shoot_action_delay) {
-            add_projectile(player, projectiles, n_projectiles, max_projectiles);
+            add_projectile(player, projectiles, n_projectiles, max_projectiles,
+                           true);
             player->ongoing_shoot_action_delay = true;
             player->shoot_action_delay_remaining_frames =
                 player->shoot_action_delay_frames;
@@ -134,10 +193,12 @@ void update_player_timers(Actor* player) {
     }
 }
 
-void draw_projectiles(Actor** projectiles, size_t n_projectiles) {
+void draw_projectiles(Projectile** projectiles,
+                      size_t n_projectiles,
+                      Color color) {
     for (size_t i = 0; i < n_projectiles; ++i) {
         DrawCircle(projectiles[i]->pos.x, projectiles[i]->pos.y,
-                   projectiles[i]->capsule_radius, RED);
+                   projectiles[i]->capsule_radius, color);
     }
 }
 
@@ -147,26 +208,62 @@ int main() {
     SearchAndSetResourceDir("resources");
     SetTargetFPS(TARGET_FPS);
 
-    Actor player = {.pos = (Vector2){.x = 200, .y = 200},
-                    .speed = 4,
-                    .capsule_radius = 20,
-                    .down_speed = 0,
-                    .right_speed = 0,
-                    .speed_damping = 0.95,
-                    .acceleration = .35,
-                    .shoot_action_delay_frames = 15,
-                    .shoot_action_delay_remaining_frames = 0,
-                    .ongoing_shoot_action_delay = false,
-                    .is_valid = true,
-                    .health = 100,
-                    .max_health = 100};
+    // init player
+    size_t player_capsule_radius = 20;
+    Actor player = {
+        .pos = (Vector2){.x = SCREEN_WIDTH / 2 - (player_capsule_radius),
+                         .y = SCREEN_HEIGHT - 100},
+        .speed = 4,
+        .capsule_radius = player_capsule_radius,
+        .down_speed = 0,
+        .right_speed = 0,
+        .speed_damping = 0.95,
+        .acceleration = .35,
+        .shoot_action_delay_frames = 15,
+        .shoot_action_delay_remaining_frames = 0,
+        .ongoing_shoot_action_delay = false,
+        .is_valid = true,
+        .health = 100,
+        .max_health = 100};
 
+    // init enemies
+    size_t n_enemies = 2;
+    Actor enemies[n_enemies];
+    for (size_t i = 0; i < n_enemies; ++i) {
+        int x = GetRandomValue(30, SCREEN_WIDTH - 30);
+        int y = GetRandomValue(20, 200);
+        enemies[i] = (Actor){.pos = (Vector2){.x = x, .y = y},
+                             .speed = 4,
+                             .capsule_radius = 20,
+                             .down_speed = 0,
+                             .right_speed = 0,
+                             .speed_damping = 0.95,
+                             .acceleration = .35,
+                             .shoot_action_delay_frames = 15,
+                             .shoot_action_delay_remaining_frames = 0,
+                             .ongoing_shoot_action_delay = false,
+                             .is_valid = true,
+                             .health = 100,
+                             .max_health = 100};
+    }
+
+    // init player projectiles
     size_t max_player_projectiles = 1024;
     size_t n_player_projectiles = 0;
-    Actor** player_projectiles =
-        malloc(max_player_projectiles * sizeof(Actor*));
+    Projectile** player_projectiles =
+        malloc(max_player_projectiles * sizeof(Projectile*));
     if (!player_projectiles) {
-        perror("failed to allocate memory for player bullets");
+        perror("failed to allocate memory for player projectiles");
+        exit(EXIT_FAILURE);
+    }
+
+    // init enemy projecties
+    size_t max_enemy_projecties = 1024;
+    size_t n_enemy_projectiles = 0;
+    Projectile** enemy_projectiles =
+        malloc(max_enemy_projecties * sizeof(Projectile*));
+    if (!enemy_projectiles) {
+        perror("failed to allocate memory for enemy projectiles");
         exit(EXIT_FAILURE);
     }
 
@@ -178,6 +275,7 @@ int main() {
         //     player.health--;
         // }
 
+        // player
         update_player_timers(&player);
         handle_player_movement(&player);
         handle_player_shooting(&player, player_projectiles,
@@ -189,10 +287,31 @@ int main() {
             }
         }
 
+        // enemies
+        for (size_t i = 0; i < n_enemies; ++i) {
+            generate_enemy_actions(&enemies[i], enemy_projectiles,
+                                   &n_enemy_projectiles, max_enemy_projecties);
+        }
+
+        for (size_t i = 0; i < n_enemy_projectiles; ++i) {
+            if (enemy_projectiles[i]->is_valid) {
+                handle_projectile_movement(enemy_projectiles[i], false);
+            }
+        }
+
+        // draw
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawCircle(player.pos.x, player.pos.y, player.capsule_radius, BLUE);
-        draw_projectiles(player_projectiles, n_player_projectiles);
+        DrawCircle(player.pos.x, player.pos.y, player.capsule_radius,
+                   BLUE);  // player
+
+        for (size_t i = 0; i < n_enemies; ++i) {
+            DrawCircle(enemies[i].pos.x, enemies[i].pos.y,
+                       enemies[i].capsule_radius, YELLOW);
+        }
+
+        draw_projectiles(player_projectiles, n_player_projectiles, PURPLE);
+        draw_projectiles(enemy_projectiles, n_enemy_projectiles, RED);
         draw_HUD(&player);
         EndDrawing();
     }

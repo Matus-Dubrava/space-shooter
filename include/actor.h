@@ -23,4 +23,29 @@ typedef struct Actor {
     bool is_valid;
 } Actor;
 
+typedef struct Projectile {
+    Vector2 pos;
+    float speed;
+    float capsule_radius;
+    float down_speed;
+    float right_speed;
+    float speed_damping;
+    float acceleration;
+    float damage;
+
+    // indicates whehether actor is still valid or if it should be treated as if
+    // it was destroyed
+    bool is_valid;
+} Projectile;
+
+Projectile* create_projectile(Vector2 pos,
+                              float speed,
+                              float capsule_size,
+                              float down_speed,
+                              float right_speed,
+                              float speed_damping,
+                              float acceleration,
+                              float damage,
+                              bool is_valid);
+
 #endif
