@@ -233,6 +233,32 @@ void handle_projectile_collision(Actor* actor,
     }
 }
 
+// create new array of projectiles with still valid projectiles;
+// frees up old projectiles
+Projectile** clear_invalid_projectiles(Projectile** projectiles,
+                                       size_t* n_projectiles,
+                                       size_t max_projectiles) {
+    Projectile** new_projectiles =
+        malloc(max_projectiles * sizeof(Projectile*));
+    if (!new_projectiles) {
+        perror("failed to allocate memory for projectiles");
+        return;
+    }
+    size_t n_new_projectiles = 0;
+
+    for (size_t i = 0; i < max_projectiles; ++i) {
+        if (projectiles[i]->is_valid) {
+            new_projectiles[n_new_projectiles++] = projectiles[i];
+        } else {
+            free(projectiles[i]);
+        }
+    }
+
+    *n_projectiles = n_new_projectiles;
+    free(projectiles);
+    return new_projectiles;
+}
+
 void draw_projectiles(Projectile** projectiles,
                       size_t n_projectiles,
                       Color color) {
@@ -362,7 +388,17 @@ int main() {
                                         n_player_projectiles);
         }
 
-        // TODO: clean invalid actors and make room in buffers
+        // clear pojectiles
+        if (n_enemy_projectiles >= max_enemy_projecties) {
+            enemy_projectiles = clear_invalid_projectiles(
+                enemy_projectiles, &n_enemy_projectiles, max_enemy_projecties);
+        }
+
+        if (n_player_projectiles >= max_player_projectiles) {
+            player_projectiles = clear_invalid_projectiles(
+                player_projectiles, &n_player_projectiles,
+                max_player_projectiles);
+        }
 
         // draw
         BeginDrawing();
