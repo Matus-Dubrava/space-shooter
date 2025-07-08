@@ -4,5 +4,6 @@
 #include "actor.h"
 
 void draw_HUD(Actor* player);
+void draw_game_over_screen();
 
 #endif

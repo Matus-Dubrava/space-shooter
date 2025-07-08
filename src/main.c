@@ -219,6 +219,11 @@ void handle_projectile_collision(Actor* actor,
                         actor->iframes_active = true;
                         actor->iframes_remainig = actor->n_iframes;
                     }
+
+                    // invalidate actor is its health drowps to 0
+                    if (actor->health <= 0) {
+                        actor->is_valid = false;
+                    }
                 }
 
                 // invalidate projectile
@@ -334,8 +339,11 @@ int main() {
 
         // enemies
         for (size_t i = 0; i < n_enemies; ++i) {
-            generate_enemy_actions(&enemies[i], enemy_projectiles,
-                                   &n_enemy_projectiles, max_enemy_projecties);
+            if (enemies[i].is_valid) {
+                generate_enemy_actions(&enemies[i], enemy_projectiles,
+                                       &n_enemy_projectiles,
+                                       max_enemy_projecties);
+            }
         }
 
         for (size_t i = 0; i < n_enemy_projectiles; ++i) {
@@ -358,18 +366,25 @@ int main() {
 
         // draw
         BeginDrawing();
-        ClearBackground(BLACK);
-        DrawCircle(player.pos.x, player.pos.y, player.capsule_radius,
-                   BLUE);  // player
+        if (player.health <= 0) {
+            draw_game_over_screen();
+        } else {
+            ClearBackground(BLACK);
+            DrawCircle(player.pos.x, player.pos.y, player.capsule_radius,
+                       BLUE);  // player
 
-        for (size_t i = 0; i < n_enemies; ++i) {
-            DrawCircle(enemies[i].pos.x, enemies[i].pos.y,
-                       enemies[i].capsule_radius, YELLOW);
+            // draw enemies
+            for (size_t i = 0; i < n_enemies; ++i) {
+                if (enemies[i].is_valid) {
+                    DrawCircle(enemies[i].pos.x, enemies[i].pos.y,
+                               enemies[i].capsule_radius, YELLOW);
+                }
+            }
+
+            draw_projectiles(player_projectiles, n_player_projectiles, PURPLE);
+            draw_projectiles(enemy_projectiles, n_enemy_projectiles, RED);
+            draw_HUD(&player);
         }
-
-        draw_projectiles(player_projectiles, n_player_projectiles, PURPLE);
-        draw_projectiles(enemy_projectiles, n_enemy_projectiles, RED);
-        draw_HUD(&player);
         EndDrawing();
     }
 

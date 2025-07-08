@@ -13,3 +13,9 @@ void draw_healthbar(Actor* player) {
 void draw_HUD(Actor* player) {
     draw_healthbar(player);
 }
+
+void draw_game_over_screen() {
+    ClearBackground(BLACK);
+    // TODO: this need to be properly centered, accounting for acutal text size
+    DrawText("GAME OVER", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2, 40, RED);
+}
