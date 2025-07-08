@@ -1,13 +1,12 @@
 #include "actor.h"
+#include "core_config.h"
+#include "core_ui.h"
 #include "core_utils.h"
 #include "raylib.h"
 #include "resource_dir.h"
 #include "stdio.h"
 #include "stdlib.h"
-
-#define SCREEN_WIDTH 1280
-#define SCREEN_HEIGHT 800
-#define TARGET_FPS 60
+#include "string.h"
 
 void handle_player_movement(Actor* player) {
     bool is_updown_key_pressed = false;
@@ -93,6 +92,7 @@ void add_projectile(Actor* player,
             perror("failed to allocate memory for player projectile");
             return NULL;
         }
+        memset(proj, 0, sizeof(proj));
 
         proj->acceleration = 1;
         proj->capsule_radius = 3;
@@ -103,7 +103,6 @@ void add_projectile(Actor* player,
         proj->speed = 10;
         proj->speed_damping = 0;
         proj->is_valid = true;
-        proj->health = 0;
 
         projectiles[*n_projectiles] = proj;
         *n_projectiles += 1;
@@ -159,7 +158,8 @@ int main() {
                     .shoot_action_delay_remaining_frames = 0,
                     .ongoing_shoot_action_delay = false,
                     .is_valid = true,
-                    .health = 100};
+                    .health = 100,
+                    .max_health = 100};
 
     size_t max_player_projectiles = 1024;
     size_t n_player_projectiles = 0;
@@ -170,7 +170,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    size_t frame = 0;
+
     while (!WindowShouldClose()) {
+        frame++;
+        if (frame % TARGET_FPS == 0) {
+            player.health--;
+        }
+
         update_player_timers(&player);
         handle_player_movement(&player);
         handle_player_shooting(&player, player_projectiles,
@@ -186,6 +193,7 @@ int main() {
         ClearBackground(BLACK);
         DrawCircle(player.pos.x, player.pos.y, player.capsule_radius, BLUE);
         draw_projectiles(player_projectiles, n_player_projectiles);
+        draw_HUD(&player);
         EndDrawing();
     }
 

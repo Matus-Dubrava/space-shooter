@@ -16,6 +16,7 @@ typedef struct Actor {
     size_t shoot_action_delay_remaining_frames;
     bool ongoing_shoot_action_delay;
     int health;
+    int max_health;
 
     // indicates whehether actor is still valid or if it should be treated as if
     // it was destroyed

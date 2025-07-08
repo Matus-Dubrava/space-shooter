@@ -12,6 +12,7 @@
 		"*.tn": "plaintext",
 		"utils.h": "c",
 		"raylib.h": "c",
-		"resource_dir.h": "c"
+		"resource_dir.h": "c",
+		"config.h": "c"
 	}
 }
