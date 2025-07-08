@@ -182,13 +182,21 @@ void handle_player_shooting(Actor* player,
     }
 }
 
-void update_player_timers(Actor* player) {
+void update_actor_timers(Actor* actor) {
     // update shooting timer
-    if (player->ongoing_shoot_action_delay) {
-        if (player->shoot_action_delay_remaining_frames > 0) {
-            player->shoot_action_delay_remaining_frames--;
+    if (actor->ongoing_shoot_action_delay) {
+        if (actor->shoot_action_delay_remaining_frames > 0) {
+            actor->shoot_action_delay_remaining_frames--;
         } else {
-            player->ongoing_shoot_action_delay = false;
+            actor->ongoing_shoot_action_delay = false;
+        }
+    }
+
+    // update iframes timer
+    if (actor->iframes_active) {
+        actor->iframes_remainig--;
+        if (actor->iframes_remainig <= 0) {
+            actor->iframes_active = false;
         }
     }
 }
@@ -197,14 +205,25 @@ void handle_projectile_collision(Actor* actor,
                                  Projectile** projectiles,
                                  size_t n_projectiles) {
     for (size_t i = 0; i < n_projectiles; ++i) {
-        if (CheckCollisionCircles(actor->pos, actor->capsule_radius,
-                                  projectiles[i]->pos,
-                                  projectiles[i]->capsule_radius)) {
-            // damage the actor that collided with the projectile
-            actor->health -= projectiles[i]->damage;
+        if (projectiles[i]->is_valid) {
+            if (CheckCollisionCircles(actor->pos, actor->capsule_radius,
+                                      projectiles[i]->pos,
+                                      projectiles[i]->capsule_radius)) {
+                // damage the actor that collided with the projectile if iframes
+                // are not active
+                if (!actor->iframes_active) {
+                    actor->health -= projectiles[i]->damage;
 
-            // invalidate projectile
-            projectiles[i]->is_valid = false;
+                    // activate iframes if actor can use them
+                    if (actor->iframes_enabled) {
+                        actor->iframes_active = true;
+                        actor->iframes_remainig = actor->n_iframes;
+                    }
+                }
+
+                // invalidate projectile
+                projectiles[i]->is_valid = false;
+            }
         }
     }
 }
@@ -242,7 +261,11 @@ int main() {
         .ongoing_shoot_action_delay = false,
         .is_valid = true,
         .health = 100,
-        .max_health = 100};
+        .max_health = 100,
+        .iframes_enabled = true,
+        .iframes_active = false,
+        .n_iframes = 30,
+        .iframes_remainig = 0};
 
     // init enemies
     size_t n_enemies = 2;
@@ -262,7 +285,11 @@ int main() {
                              .ongoing_shoot_action_delay = false,
                              .is_valid = true,
                              .health = 100,
-                             .max_health = 100};
+                             .max_health = 100,
+                             .iframes_active = false,
+                             .iframes_enabled = false,
+                             .iframes_remainig = 0,
+                             .n_iframes = 0};
     }
 
     // init player projectiles
@@ -294,7 +321,7 @@ int main() {
         // }
 
         // player
-        update_player_timers(&player);
+        update_actor_timers(&player);
         handle_player_movement(&player);
         handle_player_shooting(&player, player_projectiles,
                                &n_player_projectiles, max_player_projectiles);
@@ -317,9 +344,10 @@ int main() {
             }
         }
 
-        // player collision with enemy bullets
+        // player collision with enemy bullets; skip if iframes are active
         handle_projectile_collision(&player, enemy_projectiles,
                                     n_enemy_projectiles);
+
         // enemy collision with player bullets
         for (size_t i = 0; i < n_enemies; ++i) {
             handle_projectile_collision(&enemies[i], player_projectiles,

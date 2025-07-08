@@ -18,6 +18,12 @@ typedef struct Actor {
     int health;
     int max_health;
 
+    // iframes
+    bool iframes_enabled;  // can this actor use iframes
+    bool iframes_active;   // are iframes currently active
+    int iframes_remainig;
+    int n_iframes;
+
     // indicates whehether actor is still valid or if it should be treated as if
     // it was destroyed
     bool is_valid;
