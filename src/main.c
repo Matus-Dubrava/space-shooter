@@ -170,13 +170,13 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    size_t frame = 0;
+    // size_t frame = 0;
 
     while (!WindowShouldClose()) {
-        frame++;
-        if (frame % TARGET_FPS == 0) {
-            player.health--;
-        }
+        // frame++;
+        // if (frame % TARGET_FPS == 0) {
+        //     player.health--;
+        // }
 
         update_player_timers(&player);
         handle_player_movement(&player);
