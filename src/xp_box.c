@@ -4,10 +4,10 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-XPBox* XP_create_xp_box(Vector2 pos,
-                        Vector2 size,
-                        float xp_rewarded,
-                        uint8_t lifetime) {
+XPBox* XP_create_box_p(Vector2 pos,
+                       Vector2 size,
+                       float xp_rewarded,
+                       uint8_t lifetime) {
     XPBox* xp_box = malloc(sizeof(XPBox));
     if (!xp_box) {
         perror("failed to allocate memory for XP box");
@@ -28,7 +28,7 @@ XPBox* XP_create_xp_box(Vector2 pos,
     return xp_box;
 }
 
-void XP_move_xp_box(XPBox* xp_box) {
+void XP_move_box(XPBox* xp_box) {
     // horizontal movement
     xp_box->right_speed = xp_box->right_speed * xp_box->speed_damping;
     xp_box->pos.x += xp_box->right_speed;
@@ -60,14 +60,14 @@ void XP_update_lifetime_timer(XPBox* xp_box) {
     }
 }
 
-XPBoxes* XP_create_xp_boxes(size_t capacity) {
+XPBoxes* XP_create_boxes_p(size_t capacity) {
     XPBoxes* boxes = malloc(sizeof(XPBoxes));
     if (!boxes) {
         perror("failed to allocate memory for xp boxes");
         return NULL;
     }
 
-    XPBox* items = malloc(capacity * sizeof(XPBox*));
+    XPBox** items = malloc(capacity * sizeof(XPBox*));
     if (!items) {
         perror("failed to allocate memory for xp box items");
         free(boxes);
@@ -78,4 +78,12 @@ XPBoxes* XP_create_xp_boxes(size_t capacity) {
     boxes->len = 0;
     boxes->capacity = capacity;
     return boxes;
+}
+
+void XP_draw_boxes(XPBoxes* boxes) {
+    for (size_t i = 0; i < boxes->len; ++i) {
+        if (boxes->items[i]->is_valid) {
+            DrawRectangleV(boxes->items[i]->pos, boxes->items[i]->size, WHITE);
+        }
+    }
 }

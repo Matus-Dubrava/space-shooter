@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "stdint.h"
+#include "stdlib.h"
 
 typedef struct Actor Actor;
 
@@ -24,17 +25,19 @@ typedef struct XPBoxes {
     size_t len;
 } XPBoxes;
 
-XPBox* XP_create_xp_box(Vector2 pos,
-                        Vector2 size,
-                        float xp_rewarded,
-                        uint8_t lifetime);
+XPBox* XP_create_box_p(Vector2 pos,
+                       Vector2 size,
+                       float xp_rewarded,
+                       uint8_t lifetime);
 
-void XP_move_xp_box(XPBox* xp_box);
+void XP_move_box(XPBox* xp_box);
 
 void XP_handle_collision_with_player(Actor* player, XPBox* xp_box);
 
 void XP_update_lifetime_timer(XPBox* xp_box);
 
-XPBoxes* XP_create_xp_boxes(size_t capacity);
+XPBoxes* XP_create_boxes_p(size_t capacity);
+
+void XP_draw_boxes(XPBoxes* boxes);
 
 #endif

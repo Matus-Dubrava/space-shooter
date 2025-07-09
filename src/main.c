@@ -244,7 +244,7 @@ int main() {
     }
 
     // init xp boxes
-    XPBoxes* xp_boxes = XP_create_xp_boxes_p(MAX_XP_BOXES);
+    XPBoxes* xp_boxes = XP_create_boxes_p(MAX_XP_BOXES);
     if (!xp_boxes) {
         exit(EXIT_FAILURE);
     }
@@ -284,7 +284,7 @@ int main() {
         // xp boxes
         for (size_t i = 0; i < xp_boxes->len; ++i) {
             if (xp_boxes->items[i]->is_valid) {
-                XP_move_xp_box(xp_boxes->items[i]);
+                XP_move_box(xp_boxes->items[i]);
                 XP_update_lifetime_timer(xp_boxes->items[i]);
             }
         }
@@ -328,14 +328,7 @@ int main() {
                 }
             }
 
-            // draw xp boxes
-            for (size_t i = 0; i < xp_boxes->len; ++i) {
-                if (xp_boxes->items[i]->is_valid) {
-                    DrawRectangleV(xp_boxes->items[i]->pos,
-                                   xp_boxes->items[i]->size, WHITE);
-                }
-            }
-
+            XP_draw_boxes(xp_boxes);
             PROJ_draw_projectiles(player_projectiles, PURPLE);
             PROJ_draw_projectiles(enemy_projectiles, RED);
             draw_HUD(&player);

@@ -6,6 +6,7 @@
 
 typedef struct Actor Actor;
 typedef struct XPBox XPBox;
+typedef struct XPBoxes XPBoxes;
 
 typedef struct Projectile {
     Vector2 pos;
