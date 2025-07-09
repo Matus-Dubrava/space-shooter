@@ -59,3 +59,23 @@ void XP_update_lifetime_timer(XPBox* xp_box) {
         }
     }
 }
+
+XPBoxes* XP_create_xp_boxes(size_t capacity) {
+    XPBoxes* boxes = malloc(sizeof(XPBoxes));
+    if (!boxes) {
+        perror("failed to allocate memory for xp boxes");
+        return NULL;
+    }
+
+    XPBox* items = malloc(capacity * sizeof(XPBox*));
+    if (!items) {
+        perror("failed to allocate memory for xp box items");
+        free(boxes);
+        return NULL;
+    }
+
+    boxes->items = items;
+    boxes->len = 0;
+    boxes->capacity = capacity;
+    return boxes;
+}

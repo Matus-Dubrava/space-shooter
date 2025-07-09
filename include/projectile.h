@@ -51,9 +51,7 @@ void PROJ_draw_projectiles(Projectiles* projectiles, Color color);
 
 void PROJ_handle_projectile_collision(Actor* actor,
                                       Projectiles* projectiles,
-                                      XPBox** xp_boxes,
-                                      size_t* n_xp_boxes,
-                                      size_t max_xp_boxes);
+                                      XPBoxes* xp_boxes);
 
 void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below);
 

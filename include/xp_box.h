@@ -18,6 +18,12 @@ typedef struct XPBox {
     float speed_damping;
 } XPBox;
 
+typedef struct XPBoxes {
+    XPBox** items;
+    size_t capacity;
+    size_t len;
+} XPBoxes;
+
 XPBox* XP_create_xp_box(Vector2 pos,
                         Vector2 size,
                         float xp_rewarded,
@@ -28,5 +34,7 @@ void XP_move_xp_box(XPBox* xp_box);
 void XP_handle_collision_with_player(Actor* player, XPBox* xp_box);
 
 void XP_update_lifetime_timer(XPBox* xp_box);
+
+XPBoxes* XP_create_xp_boxes(size_t capacity);
 
 #endif

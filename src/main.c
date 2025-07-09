@@ -244,11 +244,8 @@ int main() {
     }
 
     // init xp boxes
-    size_t max_xp_boxes = MAX_XP_BOXES;
-    size_t n_xp_boxes = 0;
-    XPBox** xp_boxes = malloc(max_xp_boxes * sizeof(XPBox*));
+    XPBoxes* xp_boxes = XP_create_xp_boxes_p(MAX_XP_BOXES);
     if (!xp_boxes) {
-        perror("failed to allocate memory fo xp boxes");
         exit(EXIT_FAILURE);
     }
 
@@ -285,27 +282,25 @@ int main() {
         }
 
         // xp boxes
-        for (size_t i = 0; i < n_xp_boxes; ++i) {
-            if (xp_boxes[i]->is_valid) {
-                XP_move_xp_box(xp_boxes[i]);
-                XP_update_lifetime_timer(xp_boxes[i]);
+        for (size_t i = 0; i < xp_boxes->len; ++i) {
+            if (xp_boxes->items[i]->is_valid) {
+                XP_move_xp_box(xp_boxes->items[i]);
+                XP_update_lifetime_timer(xp_boxes->items[i]);
             }
         }
 
         // player collision with enemy bullets; skip if iframes are active
-        PROJ_handle_projectile_collision(&player, enemy_projectiles, xp_boxes,
-                                         &n_xp_boxes, max_xp_boxes);
+        PROJ_handle_projectile_collision(&player, enemy_projectiles, xp_boxes);
 
         // player collision with xp boxes
-        for (size_t i = 0; i < n_xp_boxes; ++i) {
-            XP_handle_collision_with_player(&player, xp_boxes[i]);
+        for (size_t i = 0; i < xp_boxes->len; ++i) {
+            XP_handle_collision_with_player(&player, xp_boxes->items[i]);
         }
 
         // enemy collision with player bullets
         for (size_t i = 0; i < n_enemies; ++i) {
             PROJ_handle_projectile_collision(&enemies[i], player_projectiles,
-                                             xp_boxes, &n_xp_boxes,
-                                             max_xp_boxes);
+                                             xp_boxes);
         }
 
         // clear pojectiles
@@ -334,9 +329,10 @@ int main() {
             }
 
             // draw xp boxes
-            for (size_t i = 0; i < n_xp_boxes; ++i) {
-                if (xp_boxes[i]->is_valid) {
-                    DrawRectangleV(xp_boxes[i]->pos, xp_boxes[i]->size, WHITE);
+            for (size_t i = 0; i < xp_boxes->len; ++i) {
+                if (xp_boxes->items[i]->is_valid) {
+                    DrawRectangleV(xp_boxes->items[i]->pos,
+                                   xp_boxes->items[i]->size, WHITE);
                 }
             }
 

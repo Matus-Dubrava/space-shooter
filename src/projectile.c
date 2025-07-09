@@ -57,9 +57,7 @@ void PROJ_draw_projectiles(Projectiles* projectiles, Color color) {
 
 void PROJ_handle_projectile_collision(Actor* actor,
                                       Projectiles* projectiles,
-                                      XPBox** xp_boxes,
-                                      size_t* n_xp_boxes,
-                                      size_t max_xp_boxes) {
+                                      XPBoxes* xp_boxes) {
     // skip the whole thing if the actor is not valid
     if (!actor->is_valid) {
         return;
@@ -93,7 +91,7 @@ void PROJ_handle_projectile_collision(Actor* actor,
                         actor->is_valid = false;
 
                         if (actor->xp_reward > 0 &&
-                            *n_xp_boxes < max_xp_boxes) {
+                            xp_boxes->len < xp_boxes->capacity) {
                             // create new xp box slightly below the actor
                             Vector2 pos = actor->pos;
                             pos.y += actor->capsule_radius + 3;
@@ -102,9 +100,9 @@ void PROJ_handle_projectile_collision(Actor* actor,
                             XPBox* xp_box = XP_create_xp_box(
                                 pos, (Vector2){.x = 20, .y = 20},
                                 actor->xp_reward, lifetime);
-                            xp_boxes[(*n_xp_boxes)++] = xp_box;
+                            xp_boxes->items[xp_boxes->len++] = xp_box;
 
-                        } else if (*n_xp_boxes >= max_xp_boxes) {
+                        } else if (xp_boxes->len >= xp_boxes->capacity) {
                             printf(
                                 "can't create more xp boxes, array is full\n");
                         }
