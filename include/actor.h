@@ -22,8 +22,8 @@ typedef struct Actor {
     float shield;
     float max_shield;
     float shield_regen_rate;  // per 60 frames
-    float xp;
-    float xp_reward;
+    size_t xp;
+    size_t xp_reward;
     uint16_t level;
     float levelup_xp_required;
 

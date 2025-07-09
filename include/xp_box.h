@@ -12,7 +12,7 @@ typedef struct XPBox {
     Vector2 size;
     float xp_rewarded;
     uint8_t lifetime;  // in seconds
-    uint8_t time_remaining;
+    float time_remaining;
     bool is_valid;
     float down_speed;
     float right_speed;

@@ -23,7 +23,7 @@ XPBox* XP_create_box_p(Vector2 pos,
 
     xp_box->right_speed = (float)GetRandomValue(-200, 200) / 100;
     xp_box->down_speed = (float)GetRandomValue(200, 300) / 100;
-    xp_box->speed_damping = (float)GetRandomValue(9500, 9999) / 10000;
+    xp_box->speed_damping = (float)GetRandomValue(9750, 9999) / 10000;
 
     return xp_box;
 }
@@ -53,7 +53,7 @@ void XP_handle_collision_with_player(Actor* player, XPBox* xp_box) {
 
 void XP_update_lifetime_timer(XPBox* xp_box) {
     if (xp_box->is_valid) {
-        xp_box->time_remaining -= 1 / TARGET_FPS;
+        xp_box->time_remaining -= 1.f / TARGET_FPS;
         if (xp_box->time_remaining <= 0) {
             xp_box->is_valid = false;
         }
