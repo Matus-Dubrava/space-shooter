@@ -1,17 +1,21 @@
 #include "projectile.h"
 #include "actor.h"
 #include "core_config.h"
+#include "core_debug.h"
 #include "core_utils.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "xp_box.h"
 
-Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args) {
+Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args,
+                                     DebugCtx* debug_ctx) {
     Projectile* proj = malloc(sizeof(Projectile));
     if (!proj) {
         perror("failed to allocate memory for projectile");
         return NULL;
     }
+
+    debug_ctx->tot_projectiles_spawned++;
 
     proj->pos = args->pos;
     proj->speed = args->speed;
@@ -57,7 +61,8 @@ void PROJ_draw_projectiles(Projectiles* projectiles, Color color) {
 
 void PROJ_handle_projectile_collision(Actor* actor,
                                       Projectiles* projectiles,
-                                      XPBoxes* xp_boxes) {
+                                      XPBoxes* xp_boxes,
+                                      DebugCtx* debug_ctx) {
     // skip the whole thing if the actor is not valid
     if (!actor->is_valid) {
         return;
@@ -99,11 +104,13 @@ void PROJ_handle_projectile_collision(Actor* actor,
 
                             XPBox* xp_box = XP_create_box_p(
                                 pos, (Vector2){.x = 20, .y = 20},
-                                actor->xp_reward, lifetime);
+                                actor->xp_reward, lifetime, debug_ctx);
                             xp_boxes->items[xp_boxes->len++] = xp_box;
 
                         } else if (xp_boxes->len >= xp_boxes->capacity) {
-                            printf(
+                            debug_ctx->tot_errors++;
+                            fprintf(
+                                stderr,
                                 "can't create more xp boxes, array is full\n");
                         }
                     }
@@ -116,7 +123,10 @@ void PROJ_handle_projectile_collision(Actor* actor,
     }
 }
 
-void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below) {
+void PROJ_register(Actor* actor,
+                   Projectiles* projectiles,
+                   bool spawn_below,
+                   DebugCtx* debug_ctx) {
     if (projectiles->len <= projectiles->capacity) {
         ProjectileInitArgs args = {.pos = actor->pos,
                                    .speed = 10,
@@ -127,7 +137,7 @@ void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below) {
                                    .acceleration = 0,
                                    .damage = 10};
 
-        Projectile* proj = PROJ_create_projectile_p(&args);
+        Projectile* proj = PROJ_create_projectile_p(&args, debug_ctx);
 
         // set position of the projectile below or above the actor
         // who launched it
@@ -140,14 +150,17 @@ void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below) {
         // register projectile
         projectiles->items[projectiles->len++] = proj;
     } else {
+        debug_ctx->tot_errors++;
         fprintf(stderr, "failed to register projectile; array is full\n");
     }
 }
 
-int PROJ_clear_invalid_projectiles(Projectiles* projectiles) {
+int PROJ_clear_invalid_projectiles(Projectiles* projectiles,
+                                   DebugCtx* debug_ctx) {
     Projectile** new_items =
         malloc(projectiles->capacity * sizeof(Projectile*));
     if (!new_items) {
+        debug_ctx->tot_errors++;
         perror("failed to allocate memory for new projectile items");
         return -1;
     }
@@ -181,9 +194,10 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
     }
 }
 
-void PROJ_shoot(Actor* actor, Projectiles* projectiles) {
+void PROJ_shoot(Actor* actor, Projectiles* projectiles, DebugCtx* debug_ctx) {
     if (!actor->ongoing_shoot_action_delay) {
-        PROJ_register(actor, projectiles, true);
+        const bool spawn_below = true;
+        PROJ_register(actor, projectiles, spawn_below, debug_ctx);
         actor->ongoing_shoot_action_delay = true;
         actor->shoot_action_delay_remaining_frames =
             actor->shoot_action_delay_frames;

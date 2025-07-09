@@ -1,6 +1,7 @@
 #include "xp_box.h"
 #include "actor.h"
 #include "core_config.h"
+#include "core_debug.h"
 #include "core_utils.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -8,12 +9,16 @@
 XPBox* XP_create_box_p(Vector2 pos,
                        Vector2 size,
                        float xp_rewarded,
-                       uint8_t lifetime_seconds) {
+                       uint8_t lifetime_seconds,
+                       DebugCtx* debug_ctx) {
     XPBox* box = malloc(sizeof(XPBox));
     if (!box) {
+        debug_ctx->tot_errors++;
         perror("failed to allocate memory for XP box");
         return NULL;
     }
+
+    debug_ctx->tot_xpboxes_spawned++;
 
     box->pos = pos;
     box->size = size;
@@ -51,7 +56,9 @@ void XP_move_box(XPBox* box) {
     }
 }
 
-void XP_handle_collision_with_player(Actor* player, XPBox* box) {
+void XP_handle_collision_with_player(Actor* player,
+                                     XPBox* box,
+                                     DebugCtx* debug_ctx) {
     if (box->is_valid) {
         if (CheckCollisionCircleRec(player->pos, player->capsule_radius,
                                     (Rectangle){.x = box->pos.x,
@@ -60,6 +67,7 @@ void XP_handle_collision_with_player(Actor* player, XPBox* box) {
                                                 .height = box->size.y})) {
             box->is_valid = false;
             player->xp += box->xp_rewarded;
+            debug_ctx->tot_xpboxes_pickedup++;
         }
     }
 }

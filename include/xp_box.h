@@ -6,6 +6,7 @@
 #include "stdlib.h"
 
 typedef struct Actor Actor;
+typedef struct DebugCtx DebugCtx;
 
 typedef struct XPBox {
     Vector2 pos;
@@ -28,11 +29,14 @@ typedef struct XPBoxes {
 XPBox* XP_create_box_p(Vector2 pos,
                        Vector2 size,
                        float xp_rewarded,
-                       uint8_t lifetime_seconds);
+                       uint8_t lifetime_seconds,
+                       DebugCtx* debug_ctx);
 
 void XP_move_box(XPBox* box);
 
-void XP_handle_collision_with_player(Actor* player, XPBox* box);
+void XP_handle_collision_with_player(Actor* player,
+                                     XPBox* box,
+                                     DebugCtx* debug_ctx);
 
 void XP_update_lifetime_timer(XPBox* box);
 

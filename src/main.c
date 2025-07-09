@@ -1,5 +1,6 @@
 #include "actor.h"
 #include "core_config.h"
+#include "core_debug.h"
 #include "core_ui.h"
 #include "core_utils.h"
 #include "projectile.h"
@@ -92,7 +93,9 @@ void handle_player_movement(Actor* player) {
     handle_movement_action(player, &move_actions);
 }
 
-void generate_enemy_actions(Actor* enemy, Projectiles* projectiles) {
+void generate_enemy_actions(Actor* enemy,
+                            Projectiles* projectiles,
+                            DebugCtx* debug_ctx) {
     MoveActions move_actions = {0};
 
     // for now, these are just randomly generated without any real purpose
@@ -115,16 +118,22 @@ void generate_enemy_actions(Actor* enemy, Projectiles* projectiles) {
 
     if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            PROJ_shoot(enemy, projectiles);
+            PROJ_shoot(enemy, projectiles, debug_ctx);
         }
     }
 
     handle_movement_action(enemy, &move_actions);
 }
 
-void handle_player_shooting(Actor* player, Projectiles* projectiles) {
+void handle_player_actions(Actor* player,
+                           Projectiles* projectiles,
+                           DebugCtx* debug_ctx) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        PROJ_shoot(player, projectiles);
+        PROJ_shoot(player, projectiles, debug_ctx);
+    }
+
+    if (IsKeyPressed(KEY_G)) {
+        debug_ctx->is_visible = !debug_ctx->is_visible;
     }
 }
 
@@ -165,6 +174,9 @@ int main() {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Space Shooter");
     SearchAndSetResourceDir("resources");
     SetTargetFPS(TARGET_FPS);
+
+    DebugCtx debug_ctx;
+    DBG_init(&debug_ctx);
 
     // init player
     size_t player_capsule_radius = 20;
@@ -253,7 +265,7 @@ int main() {
         // player
         update_actor_timers(&player);
         handle_player_movement(&player);
-        handle_player_shooting(&player, player_projectiles);
+        handle_player_actions(&player, player_projectiles, &debug_ctx);
         regenerate_shield_and_health(&player);
 
         for (size_t i = 0; i < player_projectiles->len; ++i) {
@@ -268,7 +280,8 @@ int main() {
         for (size_t i = 0; i < n_enemies; ++i) {
             if (enemies[i].is_valid) {
                 update_actor_timers(&enemies[i]);
-                generate_enemy_actions(&enemies[i], enemy_projectiles);
+                generate_enemy_actions(&enemies[i], enemy_projectiles,
+                                       &debug_ctx);
                 regenerate_shield_and_health(&enemies[i]);
             }
         }
@@ -290,24 +303,28 @@ int main() {
         }
 
         // player collision with enemy bullets; skip if iframes are active
-        PROJ_handle_projectile_collision(&player, enemy_projectiles, xp_boxes);
+        PROJ_handle_projectile_collision(&player, enemy_projectiles, xp_boxes,
+                                         &debug_ctx);
 
         // player collision with xp boxes
         for (size_t i = 0; i < xp_boxes->len; ++i) {
-            XP_handle_collision_with_player(&player, xp_boxes->items[i]);
+            XP_handle_collision_with_player(&player, xp_boxes->items[i],
+                                            &debug_ctx);
         }
 
         // enemy collision with player bullets
         for (size_t i = 0; i < n_enemies; ++i) {
             PROJ_handle_projectile_collision(&enemies[i], player_projectiles,
-                                             xp_boxes);
+                                             xp_boxes, &debug_ctx);
         }
 
         // clear pojectiles
-        if (PROJ_clear_invalid_projectiles(player_projectiles) != 0) {
+        if (PROJ_clear_invalid_projectiles(player_projectiles, &debug_ctx) !=
+            0) {
             fprintf(stderr, "failed to clear player projectiles\n");
         };
-        if (PROJ_clear_invalid_projectiles(enemy_projectiles) != 0) {
+        if (PROJ_clear_invalid_projectiles(enemy_projectiles, &debug_ctx) !=
+            0) {
             fprintf(stderr, "failed to clear enemy projectiles\n");
         }
 
@@ -333,6 +350,11 @@ int main() {
             PROJ_draw_projectiles(enemy_projectiles, RED);
             draw_HUD(&player);
         }
+#ifdef DEBUG
+        if (debug_ctx.is_visible) {
+            DBG_draw(&debug_ctx);
+        }
+#endif
         EndDrawing();
     }
 

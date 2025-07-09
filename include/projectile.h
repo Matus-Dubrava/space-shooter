@@ -7,6 +7,7 @@
 typedef struct Actor Actor;
 typedef struct XPBox XPBox;
 typedef struct XPBoxes XPBoxes;
+typedef struct DebugCtx DebugCtx;
 
 typedef struct Projectile {
     Vector2 pos;
@@ -40,24 +41,30 @@ typedef struct ProjectileInitArgs {
     float damage;
 } ProjectileInitArgs;
 
-Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args);
+Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args,
+                                     DebugCtx* debug_ctx);
 
 Projectiles* PROJ_create_projectiles_p(size_t capacity);
 
 // Free invalidated projectiles.
 // Return 0 if succesful, -1 on error.
-int PROJ_clear_invalid_projectiles(Projectiles* projectiles);
+int PROJ_clear_invalid_projectiles(Projectiles* projectiles,
+                                   DebugCtx* debug_ctx);
 
 void PROJ_draw_projectiles(Projectiles* projectiles, Color color);
 
 void PROJ_handle_projectile_collision(Actor* actor,
                                       Projectiles* projectiles,
-                                      XPBoxes* xp_boxes);
+                                      XPBoxes* xp_boxes,
+                                      DebugCtx* debug_ctx);
 
-void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below);
+void PROJ_register(Actor* actor,
+                   Projectiles* projectiles,
+                   bool spawn_below,
+                   DebugCtx* debug_ctx);
 
 void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards);
 
-void PROJ_shoot(Actor* actor, Projectiles* projectiles);
+void PROJ_shoot(Actor* actor, Projectiles* projectiles, DebugCtx* debug_ctx);
 
 #endif
