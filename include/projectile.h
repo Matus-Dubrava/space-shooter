@@ -59,4 +59,6 @@ void PROJ_register(Actor* actor, Projectiles* projectiles, bool spawn_below);
 
 void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards);
 
+void PROJ_shoot(Actor* actor, Projectiles* projectiles);
+
 #endif

@@ -182,3 +182,12 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
         proj->is_valid = false;
     }
 }
+
+void PROJ_shoot(Actor* actor, Projectiles* projectiles) {
+    if (!actor->ongoing_shoot_action_delay) {
+        PROJ_register(actor, projectiles, true);
+        actor->ongoing_shoot_action_delay = true;
+        actor->shoot_action_delay_remaining_frames =
+            actor->shoot_action_delay_frames;
+    }
+}

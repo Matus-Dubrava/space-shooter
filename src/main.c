@@ -10,18 +10,6 @@
 #include "string.h"
 #include "xp_box.h"
 
-// shoot if shoot action delay timer is not running
-void shoot(Actor* actor, Projectiles* projectiles) {
-    if (!actor->ongoing_shoot_action_delay) {
-        PROJ_register(actor, projectiles, true);
-        actor->ongoing_shoot_action_delay = true;
-        actor->shoot_action_delay_remaining_frames =
-            actor->shoot_action_delay_frames;
-    }
-}
-
-// move_actions: array of movement actions
-// [up, down, left, right]
 void handle_movement_action(Actor* actor, MoveActions* move_actions) {
     bool is_updown_key_pressed = false;
     bool is_leftright_key_pressed = false;
@@ -127,7 +115,7 @@ void generate_enemy_actions(Actor* enemy, Projectiles* projectiles) {
 
     if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            shoot(enemy, projectiles);
+            PROJ_shoot(enemy, projectiles);
         }
     }
 
@@ -136,7 +124,7 @@ void generate_enemy_actions(Actor* enemy, Projectiles* projectiles) {
 
 void handle_player_shooting(Actor* player, Projectiles* projectiles) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        shoot(player, projectiles);
+        PROJ_shoot(player, projectiles);
     }
 }
 
