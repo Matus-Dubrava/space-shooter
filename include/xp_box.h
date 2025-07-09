@@ -11,7 +11,7 @@ typedef struct XPBox {
     Vector2 pos;
     Vector2 size;
     float xp_rewarded;
-    uint8_t lifetime;  // in seconds
+    uint8_t lifetime_seconds;
     float time_remaining;
     bool is_valid;
     float down_speed;
@@ -28,13 +28,13 @@ typedef struct XPBoxes {
 XPBox* XP_create_box_p(Vector2 pos,
                        Vector2 size,
                        float xp_rewarded,
-                       uint8_t lifetime);
+                       uint8_t lifetime_seconds);
 
-void XP_move_box(XPBox* xp_box);
+void XP_move_box(XPBox* box);
 
-void XP_handle_collision_with_player(Actor* player, XPBox* xp_box);
+void XP_handle_collision_with_player(Actor* player, XPBox* box);
 
-void XP_update_lifetime_timer(XPBox* xp_box);
+void XP_update_lifetime_timer(XPBox* box);
 
 XPBoxes* XP_create_boxes_p(size_t capacity);
 

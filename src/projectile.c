@@ -95,7 +95,7 @@ void PROJ_handle_projectile_collision(Actor* actor,
                             // create new xp box slightly below the actor
                             Vector2 pos = actor->pos;
                             pos.y += actor->capsule_radius + 3;
-                            const uint8_t lifetime = 10;
+                            const uint8_t lifetime = DEFAULT_XP_LIFETIME;
 
                             XPBox* xp_box = XP_create_box_p(
                                 pos, (Vector2){.x = 20, .y = 20},

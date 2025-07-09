@@ -9,4 +9,6 @@
 #define MAX_ENEMY_PROJECTILES 1024
 #define MAX_XP_BOXES 1024
 
+#define DEFAULT_XP_LIFETIME 5
+
 #endif
