@@ -2,38 +2,50 @@
 #include "core_config.h"
 #include "core_ui.h"
 #include "core_utils.h"
+#include "projectile.h"
 #include "raylib.h"
 #include "resource_dir.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "xp_box.h"
+
+// shoot if shoot action delay timer is not running
+void shoot(Actor* actor, Projectiles* projectiles) {
+    if (!actor->ongoing_shoot_action_delay) {
+        PROJ_register(actor, projectiles, true);
+        actor->ongoing_shoot_action_delay = true;
+        actor->shoot_action_delay_remaining_frames =
+            actor->shoot_action_delay_frames;
+    }
+}
 
 // move_actions: array of movement actions
 // [up, down, left, right]
-void handle_movement_action(Actor* actor, bool* move_actions) {
+void handle_movement_action(Actor* actor, MoveActions* move_actions) {
     bool is_updown_key_pressed = false;
     bool is_leftright_key_pressed = false;
 
     // apply speed if player is holding movement key
-    if (move_actions[0]) {
+    if (move_actions->move_up) {
         actor->down_speed -= actor->speed * actor->acceleration;
         actor->down_speed = maxf(actor->down_speed, -actor->speed);
         is_updown_key_pressed = true;
     }
 
-    if (move_actions[1]) {
+    if (move_actions->move_down) {
         actor->down_speed += actor->speed * actor->acceleration;
         actor->down_speed = minf(actor->down_speed, actor->speed);
         is_updown_key_pressed = true;
     }
 
-    if (move_actions[2]) {
+    if (move_actions->move_left) {
         actor->right_speed -= actor->speed * actor->acceleration;
         actor->right_speed = maxf(actor->right_speed, -actor->speed);
         is_leftright_key_pressed = true;
     }
 
-    if (move_actions[3]) {
+    if (move_actions->move_right) {
         actor->right_speed += actor->speed * actor->acceleration;
         actor->right_speed = minf(actor->right_speed, actor->speed);
         is_leftright_key_pressed = true;
@@ -71,114 +83,60 @@ void handle_movement_action(Actor* actor, bool* move_actions) {
 }
 
 void handle_player_movement(Actor* player) {
-    bool move_actions[4] = {false};
+    MoveActions move_actions = {0};
 
-    // apply speed if player is holding movement key
     if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) {
-        move_actions[0] = true;
+        move_actions.move_up = true;
     }
 
     if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) {
-        move_actions[1] = true;
+        move_actions.move_down = true;
     }
 
     if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) {
-        move_actions[2] = true;
+        move_actions.move_left = true;
     }
 
     if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) {
-        move_actions[3] = true;
+        move_actions.move_right = true;
     }
 
-    handle_movement_action(player, move_actions);
+    handle_movement_action(player, &move_actions);
 }
 
-void generate_enemy_actions(Actor* enemy,
-                            Projectile** projectiles,
-                            size_t* n_projectiles,
-                            size_t max_projecties) {
-    bool move_actions[4] = {false};
-    bool shoot = false;
+void generate_enemy_actions(Actor* enemy, Projectiles* projectiles) {
+    MoveActions move_actions = {0};
 
+    // for now, these are just randomly generated without any real purpose
+    // except to have some sort of behaviour on sceen
     if (GetRandomValue(0, 100) < 50) {
-        move_actions[0] = true;
+        move_actions.move_up = true;
+    }
+
+    if (enemy->pos.y < SCREEN_HEIGHT / 2 && (0, 100) < 50) {
+        move_actions.move_down = true;
     }
 
     if (GetRandomValue(0, 100) < 50) {
-        move_actions[1] = true;
+        move_actions.move_left = true;
     }
 
     if (GetRandomValue(0, 100) < 50) {
-        move_actions[2] = true;
+        move_actions.move_right = true;
     }
 
-    if (GetRandomValue(0, 100) < 50) {
-        move_actions[3] = true;
-    }
-
-    if (GetRandomValue(0, 100) < 50) {
-        shoot = true;
-    }
-
-    if (*n_projectiles < max_projecties) {
+    if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            add_projectile(enemy, projectiles, n_projectiles, max_projecties,
-                           false);
+            shoot(enemy, projectiles);
         }
     }
 
-    handle_movement_action(enemy, move_actions);
+    handle_movement_action(enemy, &move_actions);
 }
 
-void handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
-    // handles projectile movement
-    if (shoot_upwards) {
-        proj->pos.y -= proj->speed;
-    } else {
-        proj->pos.y += proj->speed;
-    }
-
-    if (proj->pos.y > SCREEN_HEIGHT + proj->capsule_radius ||
-        proj->pos.y < 0 - proj->capsule_radius) {
-        proj->is_valid = false;
-    }
-}
-
-void add_projectile(Actor* actor,
-                    Projectile** projectiles,
-                    size_t* n_projectiles,
-                    size_t max_projectiles,
-                    bool spawn_below) {
-    if (*n_projectiles <= max_projectiles) {
-        Projectile* proj =
-            create_projectile(actor->pos, 10, 3, -10, 0, 0, 0, 10, true);
-
-        // set position of the projectile below or above the actor
-        // who launched it
-        if (spawn_below) {
-            proj->pos.y -= actor->capsule_radius;
-        } else {
-            proj->pos.y += actor->capsule_radius;
-        }
-
-        // register projectile
-        projectiles[*n_projectiles] = proj;
-        *n_projectiles += 1;
-    }
-}
-
-void handle_player_shooting(Actor* player,
-                            Actor** projectiles,
-                            size_t* n_projectiles,
-                            size_t max_projectiles) {
+void handle_player_shooting(Actor* player, Projectiles* projectiles) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        if (!player->ongoing_shoot_action_delay) {
-            add_projectile(player, projectiles, n_projectiles, max_projectiles,
-                           true);
-            player->ongoing_shoot_action_delay = true;
-            player->shoot_action_delay_remaining_frames =
-                player->shoot_action_delay_frames;
-        }
+        shoot(player, projectiles);
     }
 }
 
@@ -201,72 +159,16 @@ void update_actor_timers(Actor* actor) {
     }
 }
 
-void handle_projectile_collision(Actor* actor,
-                                 Projectile** projectiles,
-                                 size_t n_projectiles) {
-    for (size_t i = 0; i < n_projectiles; ++i) {
-        if (projectiles[i]->is_valid) {
-            if (CheckCollisionCircles(actor->pos, actor->capsule_radius,
-                                      projectiles[i]->pos,
-                                      projectiles[i]->capsule_radius)) {
-                // damage the actor that collided with the projectile if iframes
-                // are not active
-                if (!actor->iframes_active) {
-                    actor->health -= projectiles[i]->damage;
-
-                    // activate iframes if actor can use them
-                    if (actor->iframes_enabled) {
-                        actor->iframes_active = true;
-                        actor->iframes_remainig = actor->n_iframes;
-                    }
-
-                    // invalidate actor is its health drowps to 0
-                    if (actor->health <= 0) {
-                        actor->is_valid = false;
-                    }
-                }
-
-                // invalidate projectile
-                projectiles[i]->is_valid = false;
-            }
-        }
-    }
-}
-
-// create new array of projectiles with still valid projectiles;
-// frees up old projectiles
-Projectile** clear_invalid_projectiles(Projectile** projectiles,
-                                       size_t* n_projectiles,
-                                       size_t max_projectiles) {
-    Projectile** new_projectiles =
-        malloc(max_projectiles * sizeof(Projectile*));
-    if (!new_projectiles) {
-        perror("failed to allocate memory for projectiles");
-        return;
-    }
-    size_t n_new_projectiles = 0;
-
-    for (size_t i = 0; i < max_projectiles; ++i) {
-        if (projectiles[i]->is_valid) {
-            new_projectiles[n_new_projectiles++] = projectiles[i];
-        } else {
-            free(projectiles[i]);
-        }
+void regenerate_shield_and_health(Actor* actor) {
+    // regenerate both shield and health
+    if (actor->health_regen_rate > 0) {
+        actor->health += actor->health_regen_rate / TARGET_FPS;
+        actor->health = minf(actor->health, actor->max_health);
     }
 
-    *n_projectiles = n_new_projectiles;
-    free(projectiles);
-    return new_projectiles;
-}
-
-void draw_projectiles(Projectile** projectiles,
-                      size_t n_projectiles,
-                      Color color) {
-    for (size_t i = 0; i < n_projectiles; ++i) {
-        if (projectiles[i]->is_valid) {
-            DrawCircle(projectiles[i]->pos.x, projectiles[i]->pos.y,
-                       projectiles[i]->capsule_radius, color);
-        }
+    if (actor->shield_regen_rate > 0) {
+        actor->shield += actor->shield_regen_rate / TARGET_FPS;
+        actor->shield = minf(actor->shield, actor->max_shield);
     }
 }
 
@@ -293,13 +195,21 @@ int main() {
         .is_valid = true,
         .health = 100,
         .max_health = 100,
+        .health_regen_rate = 0,
+        .shield = 100,
+        .max_shield = 100,
+        .shield_regen_rate = 2,
         .iframes_enabled = true,
         .iframes_active = false,
         .n_iframes = 30,
-        .iframes_remainig = 0};
+        .iframes_remainig = 0,
+        .level = 0,
+        .xp = 0,
+        .xp_reward = 0,
+        .levelup_xp_required = 10};
 
     // init enemies
-    size_t n_enemies = 2;
+    size_t n_enemies = 3;
     Actor enemies[n_enemies];
     for (size_t i = 0; i < n_enemies; ++i) {
         int x = GetRandomValue(30, SCREEN_WIDTH - 30);
@@ -315,89 +225,107 @@ int main() {
                              .shoot_action_delay_remaining_frames = 0,
                              .ongoing_shoot_action_delay = false,
                              .is_valid = true,
-                             .health = 100,
+                             //  .health = 100,
+                             .health = 10,
                              .max_health = 100,
                              .iframes_active = false,
                              .iframes_enabled = false,
                              .iframes_remainig = 0,
-                             .n_iframes = 0};
+                             .n_iframes = 0,
+                             .health_regen_rate = 0,
+                             .shield = 0,
+                             .shield_regen_rate = 0,
+                             .max_shield = 0,
+                             .level = 0,
+                             .xp = 0,
+                             .xp_reward = 5,
+                             .levelup_xp_required = 0};
     }
 
     // init player projectiles
-    size_t max_player_projectiles = 1024;
-    size_t n_player_projectiles = 0;
-    Projectile** player_projectiles =
-        malloc(max_player_projectiles * sizeof(Projectile*));
+    Projectiles* player_projectiles =
+        PROJ_create_projectiles_p(MAX_PLAYER_PROJECTILES);
     if (!player_projectiles) {
-        perror("failed to allocate memory for player projectiles");
         exit(EXIT_FAILURE);
     }
 
-    // init enemy projecties
-    size_t max_enemy_projecties = 1024;
-    size_t n_enemy_projectiles = 0;
-    Projectile** enemy_projectiles =
-        malloc(max_enemy_projecties * sizeof(Projectile*));
+    Projectiles* enemy_projectiles =
+        PROJ_create_projectiles_p(MAX_ENEMY_PROJECTILES);
     if (!enemy_projectiles) {
-        perror("failed to allocate memory for enemy projectiles");
         exit(EXIT_FAILURE);
     }
 
-    // size_t frame = 0;
+    // init xp boxes
+    size_t max_xp_boxes = MAX_XP_BOXES;
+    size_t n_xp_boxes = 0;
+    XPBox** xp_boxes = malloc(max_xp_boxes * sizeof(XPBox*));
+    if (!xp_boxes) {
+        perror("failed to allocate memory fo xp boxes");
+        exit(EXIT_FAILURE);
+    }
 
     while (!WindowShouldClose()) {
-        // frame++;
-        // if (frame % TARGET_FPS == 0) {
-        //     player.health--;
-        // }
-
         // player
         update_actor_timers(&player);
         handle_player_movement(&player);
-        handle_player_shooting(&player, player_projectiles,
-                               &n_player_projectiles, max_player_projectiles);
+        handle_player_shooting(&player, player_projectiles);
+        regenerate_shield_and_health(&player);
 
-        for (size_t i = 0; i < n_player_projectiles; ++i) {
-            if (player_projectiles[i]->is_valid) {
-                handle_projectile_movement(player_projectiles[i], true);
+        for (size_t i = 0; i < player_projectiles->len; ++i) {
+            if (player_projectiles->items[i]->is_valid) {
+                const bool shoot_upwards = true;
+                PROJ_handle_projectile_movement(player_projectiles->items[i],
+                                                shoot_upwards);
             }
         }
 
         // enemies
         for (size_t i = 0; i < n_enemies; ++i) {
             if (enemies[i].is_valid) {
-                generate_enemy_actions(&enemies[i], enemy_projectiles,
-                                       &n_enemy_projectiles,
-                                       max_enemy_projecties);
+                update_actor_timers(&enemies[i]);
+                generate_enemy_actions(&enemies[i], enemy_projectiles);
+                regenerate_shield_and_health(&enemies[i]);
             }
         }
 
-        for (size_t i = 0; i < n_enemy_projectiles; ++i) {
-            if (enemy_projectiles[i]->is_valid) {
-                handle_projectile_movement(enemy_projectiles[i], false);
+        for (size_t i = 0; i < enemy_projectiles->len; ++i) {
+            if (enemy_projectiles->items[i]->is_valid) {
+                bool shoot_upwards = false;
+                PROJ_handle_projectile_movement(enemy_projectiles->items[i],
+                                                shoot_upwards);
+            }
+        }
+
+        // xp boxes
+        for (size_t i = 0; i < n_xp_boxes; ++i) {
+            if (xp_boxes[i]->is_valid) {
+                XP_move_xp_box(xp_boxes[i]);
+                XP_update_lifetime_timer(xp_boxes[i]);
             }
         }
 
         // player collision with enemy bullets; skip if iframes are active
-        handle_projectile_collision(&player, enemy_projectiles,
-                                    n_enemy_projectiles);
+        PROJ_handle_projectile_collision(&player, enemy_projectiles, xp_boxes,
+                                         &n_xp_boxes, max_xp_boxes);
+
+        // player collision with xp boxes
+        for (size_t i = 0; i < n_xp_boxes; ++i) {
+            XP_handle_collision_with_player(&player, xp_boxes[i]);
+        }
 
         // enemy collision with player bullets
         for (size_t i = 0; i < n_enemies; ++i) {
-            handle_projectile_collision(&enemies[i], player_projectiles,
-                                        n_player_projectiles);
+            PROJ_handle_projectile_collision(&enemies[i], player_projectiles,
+                                             xp_boxes, &n_xp_boxes,
+                                             max_xp_boxes);
         }
 
         // clear pojectiles
-        if (n_enemy_projectiles >= max_enemy_projecties) {
-            enemy_projectiles = clear_invalid_projectiles(
-                enemy_projectiles, &n_enemy_projectiles, max_enemy_projecties);
-        }
-
-        if (n_player_projectiles >= max_player_projectiles) {
-            player_projectiles = clear_invalid_projectiles(
-                player_projectiles, &n_player_projectiles,
-                max_player_projectiles);
+        if (PROJ_clear_invalid_projectiles(player_projectiles) != 0) {
+            fprintf(stderr, "failed to clear player projectiles\n");
+        };
+        if (PROJ_clear_invalid_projectiles(enemy_projectiles) != 0) {
+            fprintf(stderr, "failed to clear enemy projectiles\n");
         }
 
         // draw
@@ -417,8 +345,15 @@ int main() {
                 }
             }
 
-            draw_projectiles(player_projectiles, n_player_projectiles, PURPLE);
-            draw_projectiles(enemy_projectiles, n_enemy_projectiles, RED);
+            // draw xp boxes
+            for (size_t i = 0; i < n_xp_boxes; ++i) {
+                if (xp_boxes[i]->is_valid) {
+                    DrawRectangleV(xp_boxes[i]->pos, xp_boxes[i]->size, WHITE);
+                }
+            }
+
+            PROJ_draw_projectiles(player_projectiles, PURPLE);
+            PROJ_draw_projectiles(enemy_projectiles, RED);
             draw_HUD(&player);
         }
         EndDrawing();
