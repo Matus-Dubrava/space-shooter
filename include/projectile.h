@@ -80,6 +80,7 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards);
 void PROJ_shoot(Actor* actor,
                 Projectiles* projectiles,
                 const Actors* enemies,
+                bool spawn_below,
                 ProjectileInitArgs* args,
                 DebugCtx* debug_ctx);
 
@@ -90,12 +91,8 @@ void PROJ_shoot(Actor* actor,
  */
 void PROJ_update_projectiles_timers(Projectiles* projectiles);
 
-void PROJ_get_default_args(Actor* actor,
-                           ProjectileInitArgs* args_out,
-                           bool spawn_below);
+void PROJ_get_default_args(Actor* actor, ProjectileInitArgs* args_out);
 
-void PROJ_get_default_guided_args(Actor* actor,
-                                  ProjectileInitArgs* args_out,
-                                  bool spawn_below);
+void PROJ_get_default_guided_args(Actor* actor, ProjectileInitArgs* args_out);
 
 #endif

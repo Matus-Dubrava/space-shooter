@@ -135,9 +135,7 @@ void PROJ_handle_projectile_collision(Actor* actor,
     }
 }
 
-void PROJ_get_default_args(Actor* actor,
-                           ProjectileInitArgs* args_out,
-                           bool spawn_below) {
+void PROJ_get_default_args(Actor* actor, ProjectileInitArgs* args_out) {
     args_out->pos = actor->pos;
     args_out->speed = 10;
     args_out->capsule_size = 3;
@@ -151,9 +149,7 @@ void PROJ_get_default_args(Actor* actor,
     args_out->target = NULL;
 }
 
-void PROJ_get_default_guided_args(Actor* actor,
-                                  ProjectileInitArgs* args_out,
-                                  bool spawn_below) {
+void PROJ_get_default_guided_args(Actor* actor, ProjectileInitArgs* args_out) {
     args_out->pos = actor->pos;
     args_out->speed = 10;
     args_out->capsule_size = 3;
@@ -259,11 +255,10 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
 void PROJ_shoot(Actor* actor,
                 Projectiles* projectiles,
                 const Actors* enemies,
+                bool spawn_below,
                 ProjectileInitArgs* args,
                 DebugCtx* debug_ctx) {
     if (!actor->ongoing_shoot_action_delay) {
-        const bool spawn_below = true;
-
         if (projectiles->len <= projectiles->capacity) {
             ClosestEnemy target = {0};
 
@@ -277,9 +272,9 @@ void PROJ_shoot(Actor* actor,
             // set position of the projectile below or above the actor
             // who launched it
             if (spawn_below) {
-                proj->pos.y -= actor->capsule_radius;
-            } else {
                 proj->pos.y += actor->capsule_radius;
+            } else {
+                proj->pos.y -= actor->capsule_radius;
             }
 
             // register projectile

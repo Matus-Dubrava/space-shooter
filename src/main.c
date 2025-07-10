@@ -121,9 +121,10 @@ void generate_enemy_actions(Actor* enemy,
         if (GetRandomValue(0, 100) < 75) {
             const bool spawn_below = true;
             ProjectileInitArgs args = {0};
-            PROJ_get_default_args(enemy, &args, spawn_below);
+            PROJ_get_default_args(enemy, &args);
             // PROJ_get_default_guided_args(&enemy, &args, spawn_below);
-            PROJ_shoot(enemy, projectiles, enemies, &args, debug_ctx);
+            PROJ_shoot(enemy, projectiles, enemies, spawn_below, &args,
+                       debug_ctx);
         }
     }
 
@@ -137,8 +138,8 @@ void handle_player_actions(Actor* player,
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
         const bool spawn_below = false;
         ProjectileInitArgs args = {0};
-        PROJ_get_default_guided_args(player, &args, false);
-        PROJ_shoot(player, projectiles, enemies, &args, debug_ctx);
+        PROJ_get_default_guided_args(player, &args);
+        PROJ_shoot(player, projectiles, enemies, spawn_below, &args, debug_ctx);
     }
 
     if (IsKeyPressed(KEY_G)) {
