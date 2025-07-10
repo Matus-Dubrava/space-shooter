@@ -27,7 +27,7 @@ void draw_xp_info(Actor* player) {
     char xp_info_buf[100];
     sprintf(xp_info_buf, "XP: %zu", player->xp);
     char level_info_buf[100];
-    sprintf(level_info_buf, "LVL: %zu", player->level);
+    sprintf(level_info_buf, "LVL: %d", player->level);
 
     const int x = 20;
     const int y = SCREEN_HEIGHT - 60;

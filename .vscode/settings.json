@@ -13,6 +13,8 @@
 		"utils.h": "c",
 		"raylib.h": "c",
 		"resource_dir.h": "c",
-		"config.h": "c"
+		"config.h": "c",
+		"limits.h": "c",
+		"stdbool.h": "c"
 	}
 }

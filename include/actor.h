@@ -3,7 +3,10 @@
 
 #include "raylib.h"
 #include "stdint.h"
+#include "stdio.h"
 #include "stdlib.h"
+
+typedef struct DebugCtx DebugCtx;
 
 typedef struct Actor {
     Vector2 pos;
@@ -38,4 +41,15 @@ typedef struct Actor {
     bool is_valid;
 } Actor;
 
+typedef struct Actors {
+    Actor** items;
+    size_t capacity;
+    size_t len;
+} Actors;
+
+Actors* A_create_actors_p(size_t capacity, DebugCtx* debug_ctx);
+
+Actor* A_create_test_enemy_p(DebugCtx* debug_ctx);
+
+int A_add_actor(Actors* actors, Actor* actor, DebugCtx* debug_ctx);
 #endif

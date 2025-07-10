@@ -7,6 +7,11 @@
 #include "stdlib.h"
 #include "xp_box.h"
 
+#define DEFAULT_PLAYER_GUIDING_RATE 1.5
+#define DEFAULT_PLAYER_GUIDING_FRAMES 15
+#define DEFAULT_GUIDING_MULTIPLIER 1.03
+#define DEFAULT_BRAKING_MULTIPLIER 0.97
+
 Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args,
                                      DebugCtx* debug_ctx) {
     Projectile* proj = malloc(sizeof(Projectile));
@@ -26,6 +31,12 @@ Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args,
     proj->capsule_radius = args->capsule_size;
     proj->damage = args->damage;
     proj->is_valid = true;
+    proj->is_guided = args->is_guided;
+    proj->guiding_rate = args->guiding_rate;
+    proj->target = args->target;
+    proj->guiding_delay_frames = args->guiding_delay_frames;
+    proj->guiding_delay_remaining_frames = args->guiding_delay_remaining_frames;
+    proj->guiding_multiplier = args->guiding_multiplier;
     return proj;
 }
 
@@ -63,12 +74,13 @@ void PROJ_handle_projectile_collision(Actor* actor,
                                       Projectiles* projectiles,
                                       XPBoxes* xp_boxes,
                                       DebugCtx* debug_ctx) {
-    // skip the whole thing if the actor is not valid
-    if (!actor->is_valid) {
-        return;
-    }
-
     for (size_t i = 0; i < projectiles->len; ++i) {
+        // If actor is not valid, stop checking. We need to perform this check
+        // before we resolve each projectile collision because the previous one
+        // could have invalidated the actor.
+        if (!actor->is_valid) {
+            break;
+        }
         if (projectiles->items[i]->is_valid) {
             if (CheckCollisionCircles(actor->pos, actor->capsule_radius,
                                       projectiles->items[i]->pos,
@@ -126,16 +138,65 @@ void PROJ_handle_projectile_collision(Actor* actor,
 void PROJ_register(Actor* actor,
                    Projectiles* projectiles,
                    bool spawn_below,
+                   ProjectileInitArgs* args,
                    DebugCtx* debug_ctx) {
     if (projectiles->len <= projectiles->capacity) {
-        ProjectileInitArgs args = {.pos = actor->pos,
-                                   .speed = 10,
-                                   .capsule_size = 3,
-                                   .down_speed = -10,
-                                   .right_speed = 0,
-                                   .speed_damping = 0,
-                                   .acceleration = 0,
-                                   .damage = 10};
+        ProjectileInitArgs args = {
+            .pos = actor->pos,
+            .speed = 10,
+            .capsule_size = 3,
+            .down_speed = -10,
+            .right_speed = 0,
+            .speed_damping = 0,
+            .acceleration = 0,
+            .damage = 10,
+            .is_guided = false,
+            .guiding_rate = 0,
+            .target = NULL,
+        };
+
+        Projectile* proj = PROJ_create_projectile_p(&args, debug_ctx);
+
+        // set position of the projectile below or above the actor
+        // who launched it
+        if (spawn_below) {
+            proj->pos.y -= actor->capsule_radius;
+        } else {
+            proj->pos.y += actor->capsule_radius;
+        }
+
+        // register projectile
+        projectiles->items[projectiles->len++] = proj;
+    } else {
+        debug_ctx->tot_errors++;
+        fprintf(stderr, "failed to register projectile; array is full\n");
+    }
+}
+
+void PROJ_register_guided(Actor* actor,
+                          Projectiles* projectiles,
+                          bool spawn_below,
+                          float guiding_rate,
+                          uint16_t guiding_delay_frames,
+                          Actor* target,
+                          ProjectileInitArgs* args,
+                          DebugCtx* debug_ctx) {
+    if (projectiles->len <= projectiles->capacity) {
+        ProjectileInitArgs args = {
+            .pos = actor->pos,
+            .speed = 10,
+            .capsule_size = 3,
+            .down_speed = -10,
+            .right_speed = 0,
+            .speed_damping = 0,
+            .acceleration = 0,
+            .damage = 10,
+            .is_guided = true,
+            .target = target,
+            .guiding_rate = guiding_rate,
+            .guiding_delay_frames = guiding_delay_frames,
+            .guiding_delay_remaining_frames = guiding_delay_frames,
+            .guiding_multiplier = DEFAULT_GUIDING_MULTIPLIER};
 
         Projectile* proj = PROJ_create_projectile_p(&args, debug_ctx);
 
@@ -188,18 +249,87 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
         proj->pos.y += proj->speed;
     }
 
+    if (proj->is_guided) {
+        // Handle vertical movement for guided projectiles.
+        // Guiding doesn't start right away, indicated by the guiding delay.
+        bool move_left = false;
+        bool move_right = false;
+        if (proj->target && proj->guiding_delay_remaining_frames <= 0) {
+            move_left = proj->pos.x > proj->target->pos.x;
+            move_right = proj->pos.x < proj->target->pos.x;
+        }
+
+        // Preserve the direction of guided projectile.
+        // This is very crude and ideally we should start decelerating
+        // projectile's horizontal speed instead, and finally reversing it.
+        if (move_left && proj->right_speed > 0) {
+            proj->guiding_multiplier = DEFAULT_BRAKING_MULTIPLIER;
+            move_left = false;
+            move_right = true;
+        } else if (move_right && proj->right_speed < 0) {
+            proj->guiding_multiplier = DEFAULT_BRAKING_MULTIPLIER;
+            move_left = true;
+            move_right = false;
+        } else {
+            DEFAULT_GUIDING_MULTIPLIER;
+        }
+
+        // compute new projectile position
+        if (move_left) {
+            proj->pos.x -= proj->guiding_rate;
+            proj->right_speed = -proj->guiding_rate;
+        } else if (move_right) {
+            proj->pos.x += proj->guiding_rate;
+            proj->right_speed = proj->guiding_rate;
+        }
+        proj->guiding_rate *= proj->guiding_multiplier;
+    }
+
+    // projectile leaving screen
     if (proj->pos.y > SCREEN_HEIGHT + proj->capsule_radius ||
         proj->pos.y < 0 - proj->capsule_radius) {
         proj->is_valid = false;
     }
 }
 
-void PROJ_shoot(Actor* actor, Projectiles* projectiles, DebugCtx* debug_ctx) {
+void PROJ_shoot(Actor* actor,
+                Projectiles* projectiles,
+                Actors* enemies,
+                bool is_guided,
+                ProjectileInitArgs* args,
+                DebugCtx* debug_ctx) {
     if (!actor->ongoing_shoot_action_delay) {
         const bool spawn_below = true;
-        PROJ_register(actor, projectiles, spawn_below, debug_ctx);
-        actor->ongoing_shoot_action_delay = true;
-        actor->shoot_action_delay_remaining_frames =
-            actor->shoot_action_delay_frames;
+
+        if (is_guided) {
+            // TODO: guiding related params are not passed to this function for
+            // now this needs to be updated later so that we can have different
+            // guiding rates for different projectiles
+            ClosestEnemy target = {0};
+            find_closest_enemy(actor, enemies, &target);
+            PROJ_register_guided(
+                actor, projectiles, spawn_below, DEFAULT_PLAYER_GUIDING_RATE,
+                DEFAULT_PLAYER_GUIDING_FRAMES, target.actor, &args, debug_ctx);
+
+            // TODO: uncomment this to restore delay for guided projectiles
+            // actor->ongoing_shoot_action_delay = true;
+            // actor->shoot_action_delay_remaining_frames =
+            //     actor->shoot_action_delay_frames;
+        } else {
+            PROJ_register(actor, projectiles, spawn_below, &args, debug_ctx);
+            actor->ongoing_shoot_action_delay = true;
+            actor->shoot_action_delay_remaining_frames =
+                actor->shoot_action_delay_frames;
+        }
+    }
+}
+
+void PROJ_update_projectiles_timers(Projectiles* projectiles) {
+    for (size_t i = 0; i < projectiles->len; ++i) {
+        if (projectiles->items[i]->is_valid) {
+            if (projectiles->items[i]->guiding_delay_remaining_frames > 0) {
+                projectiles->items[i]->guiding_delay_remaining_frames--;
+            }
+        }
     }
 }

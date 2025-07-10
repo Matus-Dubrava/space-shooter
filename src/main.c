@@ -94,6 +94,7 @@ void handle_player_movement(Actor* player) {
 }
 
 void generate_enemy_actions(Actor* enemy,
+                            Actors* enemies,
                             Projectiles* projectiles,
                             DebugCtx* debug_ctx) {
     MoveActions move_actions = {0};
@@ -118,7 +119,10 @@ void generate_enemy_actions(Actor* enemy,
 
     if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            PROJ_shoot(enemy, projectiles, debug_ctx);
+            const bool is_guided = false;
+            ProjectileInitArgs args = {0};
+            PROJ_shoot(enemy, projectiles, enemies, is_guided, &args,
+                       debug_ctx);
         }
     }
 
@@ -126,10 +130,15 @@ void generate_enemy_actions(Actor* enemy,
 }
 
 void handle_player_actions(Actor* player,
+                           Actors* enemies,
                            Projectiles* projectiles,
                            DebugCtx* debug_ctx) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        PROJ_shoot(player, projectiles, debug_ctx);
+        const bool is_guided = true;
+        const bool is_multishot = true;
+        const uint16_t n_proj = 3;
+        ProjectileInitArgs args = {0};
+        PROJ_shoot(player, projectiles, enemies, is_guided, &args, debug_ctx);
     }
 
     if (IsKeyPressed(KEY_G)) {
@@ -210,36 +219,15 @@ int main() {
 
     // init enemies
     size_t n_enemies = 3;
-    Actor enemies[n_enemies];
+    Actors* enemies = A_create_actors_p(1024, &debug_ctx);
+    if (!enemies) {
+        exit(EXIT_FAILURE);
+    }
     for (size_t i = 0; i < n_enemies; ++i) {
-        int x = GetRandomValue(30, SCREEN_WIDTH - 30);
-        int y = GetRandomValue(20, 200);
-        enemies[i] = (Actor){.pos = (Vector2){.x = x, .y = y},
-                             .speed = 4,
-                             .capsule_radius = 20,
-                             .down_speed = 0,
-                             .right_speed = 0,
-                             .speed_damping = 0.95,
-                             .acceleration = .35,
-                             .shoot_action_delay_frames = 15,
-                             .shoot_action_delay_remaining_frames = 0,
-                             .ongoing_shoot_action_delay = false,
-                             .is_valid = true,
-                             //  .health = 100,
-                             .health = 10,
-                             .max_health = 100,
-                             .iframes_active = false,
-                             .iframes_enabled = false,
-                             .iframes_remainig = 0,
-                             .n_iframes = 0,
-                             .health_regen_rate = 0,
-                             .shield = 0,
-                             .shield_regen_rate = 0,
-                             .max_shield = 0,
-                             .level = 0,
-                             .xp = 0,
-                             .xp_reward = 5,
-                             .levelup_xp_required = 0};
+        Actor* enemy = A_create_test_enemy_p(&debug_ctx);
+        if (enemy) {
+            A_add_actor(enemies, enemy, &debug_ctx);
+        }
     }
 
     // init player projectiles
@@ -265,9 +253,11 @@ int main() {
         // player
         update_actor_timers(&player);
         handle_player_movement(&player);
-        handle_player_actions(&player, player_projectiles, &debug_ctx);
+        handle_player_actions(&player, enemies, player_projectiles, &debug_ctx);
         regenerate_shield_and_health(&player);
 
+        // player projectiles
+        PROJ_update_projectiles_timers(player_projectiles);
         for (size_t i = 0; i < player_projectiles->len; ++i) {
             if (player_projectiles->items[i]->is_valid) {
                 const bool shoot_upwards = true;
@@ -277,18 +267,20 @@ int main() {
         }
 
         // enemies
-        for (size_t i = 0; i < n_enemies; ++i) {
-            if (enemies[i].is_valid) {
-                update_actor_timers(&enemies[i]);
-                generate_enemy_actions(&enemies[i], enemy_projectiles,
-                                       &debug_ctx);
-                regenerate_shield_and_health(&enemies[i]);
+        for (size_t i = 0; i < enemies->len; ++i) {
+            if (enemies->items[i]->is_valid) {
+                update_actor_timers(enemies->items[i]);
+                generate_enemy_actions(enemies->items[i], enemies,
+                                       enemy_projectiles, &debug_ctx);
+                regenerate_shield_and_health(enemies->items[i]);
             }
         }
 
+        // enemy projectiles
         for (size_t i = 0; i < enemy_projectiles->len; ++i) {
             if (enemy_projectiles->items[i]->is_valid) {
                 bool shoot_upwards = false;
+                PROJ_update_projectiles_timers(enemy_projectiles);
                 PROJ_handle_projectile_movement(enemy_projectiles->items[i],
                                                 shoot_upwards);
             }
@@ -314,8 +306,8 @@ int main() {
 
         // enemy collision with player bullets
         for (size_t i = 0; i < n_enemies; ++i) {
-            PROJ_handle_projectile_collision(&enemies[i], player_projectiles,
-                                             xp_boxes, &debug_ctx);
+            PROJ_handle_projectile_collision(
+                enemies->items[i], player_projectiles, xp_boxes, &debug_ctx);
         }
 
         // clear pojectiles
@@ -338,10 +330,11 @@ int main() {
                        BLUE);  // player
 
             // draw enemies
-            for (size_t i = 0; i < n_enemies; ++i) {
-                if (enemies[i].is_valid) {
-                    DrawCircle(enemies[i].pos.x, enemies[i].pos.y,
-                               enemies[i].capsule_radius, YELLOW);
+            for (size_t i = 0; i < enemies->len; ++i) {
+                if (enemies->items[i]->is_valid) {
+                    DrawCircle(enemies->items[i]->pos.x,
+                               enemies->items[i]->pos.y,
+                               enemies->items[i]->capsule_radius, YELLOW);
                 }
             }
 

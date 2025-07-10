@@ -2,9 +2,11 @@
 #define PROJECTILE_H
 
 #include "raylib.h"
+#include "stdint.h"
 #include "stdlib.h"
 
 typedef struct Actor Actor;
+typedef struct Actors Actors;
 typedef struct XPBox XPBox;
 typedef struct XPBoxes XPBoxes;
 typedef struct DebugCtx DebugCtx;
@@ -18,6 +20,14 @@ typedef struct Projectile {
     float speed_damping;
     float acceleration;
     float damage;
+
+    // guiding
+    bool is_guided;
+    float guiding_rate;
+    uint16_t guiding_delay_frames;
+    uint16_t guiding_delay_remaining_frames;
+    float guiding_multiplier;
+    Actor* target;
 
     // indicates whehether actor is still valid or if it should be treated as if
     // it was destroyed
@@ -39,6 +49,12 @@ typedef struct ProjectileInitArgs {
     float speed_damping;
     float acceleration;
     float damage;
+    bool is_guided;
+    float guiding_rate;
+    uint16_t guiding_delay_frames;
+    uint16_t guiding_delay_remaining_frames;
+    float guiding_multiplier;
+    Actor* target;
 } ProjectileInitArgs;
 
 Projectile* PROJ_create_projectile_p(ProjectileInitArgs* args,
@@ -61,10 +77,32 @@ void PROJ_handle_projectile_collision(Actor* actor,
 void PROJ_register(Actor* actor,
                    Projectiles* projectiles,
                    bool spawn_below,
+                   ProjectileInitArgs* args,
                    DebugCtx* debug_ctx);
+
+void PROJ_register_guided(Actor* actor,
+                          Projectiles* projectiles,
+                          bool spawn_below,
+                          float guiding_rate,
+                          uint16_t guiding_delay_frames,
+                          Actor* target,
+                          ProjectileInitArgs* args,
+                          DebugCtx* debug_ctx);
 
 void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards);
 
-void PROJ_shoot(Actor* actor, Projectiles* projectiles, DebugCtx* debug_ctx);
+void PROJ_shoot(Actor* actor,
+                Projectiles* projectiles,
+                Actors* enemies,
+                bool is_guided,
+                ProjectileInitArgs* args,
+                DebugCtx* debug_ctx);
+
+/*
+ * Update timers associated with every projectile. General usage is to call this
+ * on tick.
+ * @param projectiles all projectiles
+ */
+void PROJ_update_projectiles_timers(Projectiles* projectiles);
 
 #endif
