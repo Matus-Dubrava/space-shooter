@@ -158,7 +158,7 @@ void PROJ_get_default_guided_args(Actor* actor, ProjectileInitArgs* args_out) {
     args_out->speed_damping = 0;
     args_out->acceleration = 0;
     args_out->damage = 10;
-    args_out->is_guided = false;
+    args_out->is_guided = true;
     args_out->guiding_rate = 0;
     args_out->target = NULL;
     args_out->guiding_rate = DEFAULT_PLAYER_GUIDING_RATE;

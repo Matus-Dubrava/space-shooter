@@ -122,7 +122,6 @@ void generate_enemy_actions(Actor* enemy,
             const bool spawn_below = true;
             ProjectileInitArgs args = {0};
             PROJ_get_default_args(enemy, &args);
-            // PROJ_get_default_guided_args(&enemy, &args, spawn_below);
             PROJ_shoot(enemy, projectiles, enemies, spawn_below, &args,
                        debug_ctx);
         }
@@ -219,7 +218,7 @@ int main() {
         .levelup_xp_required = 10};
 
     // init enemies
-    size_t n_enemies = 1;
+    size_t n_enemies = N_DEFAULT_ENEMIES;
     Actors* enemies = A_create_actors_p(1024, &debug_ctx);
     if (!enemies) {
         exit(EXIT_FAILURE);
