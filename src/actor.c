@@ -38,6 +38,7 @@ Actor* A_create_test_enemy_p(DebugCtx* debug_ctx) {
 
     actor->pos = (Vector2){.x = x, .y = y};
     actor->speed = 2;
+    actor->is_player = false;
     actor->capsule_radius = 20;
     actor->down_speed = 0;
     actor->right_speed = 0;
@@ -62,6 +63,8 @@ Actor* A_create_test_enemy_p(DebugCtx* debug_ctx) {
     actor->xp = 0;
     actor->xp_reward = 5;
     actor->levelup_xp_required = 0;
+    actor->multishot_enabled = false;
+    actor->n_projs = 1;
     return actor;
 }
 

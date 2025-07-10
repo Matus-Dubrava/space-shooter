@@ -16,9 +16,6 @@ typedef struct Actor {
     float right_speed;
     float speed_damping;
     float acceleration;
-    size_t shoot_action_delay_frames;
-    size_t shoot_action_delay_remaining_frames;
-    bool ongoing_shoot_action_delay;
     float health;
     float max_health;
     float health_regen_rate;  // per 60 frames
@@ -28,7 +25,15 @@ typedef struct Actor {
     size_t xp;
     size_t xp_reward;
     uint16_t level;
-    float levelup_xp_required;
+    size_t levelup_xp_required;
+    bool is_player;
+
+    // actor level projectile settings
+    uint16_t shoot_action_delay_frames;
+    uint16_t shoot_action_delay_remaining_frames;
+    bool ongoing_shoot_action_delay;
+    bool multishot_enabled;
+    uint16_t n_projs;
 
     // iframes
     bool iframes_enabled;  // can this actor use iframes
@@ -52,4 +57,5 @@ Actors* A_create_actors_p(size_t capacity, DebugCtx* debug_ctx);
 Actor* A_create_test_enemy_p(DebugCtx* debug_ctx);
 
 int A_add_actor(Actors* actors, Actor* actor, DebugCtx* debug_ctx);
+
 #endif

@@ -1,3 +1,4 @@
+#include "actions.h"
 #include "actor.h"
 #include "core_config.h"
 #include "core_debug.h"
@@ -119,11 +120,7 @@ void generate_enemy_actions(Actor* enemy,
 
     if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            const bool spawn_below = true;
-            ProjectileInitArgs args = {0};
-            PROJ_get_default_args(enemy, &args);
-            PROJ_shoot(enemy, projectiles, enemies, spawn_below, &args,
-                       debug_ctx);
+            ACT_shoot(enemy, enemies, projectiles, debug_ctx);
         }
     }
 
@@ -135,10 +132,7 @@ void handle_player_actions(Actor* player,
                            Projectiles* projectiles,
                            DebugCtx* debug_ctx) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        const bool spawn_below = false;
-        ProjectileInitArgs args = {0};
-        PROJ_get_default_guided_args(player, &args);
-        PROJ_shoot(player, projectiles, enemies, spawn_below, &args, debug_ctx);
+        ACT_shoot(player, enemies, projectiles, debug_ctx);
     }
 
     if (IsKeyPressed(KEY_G)) {
@@ -193,6 +187,7 @@ int main() {
         .pos = (Vector2){.x = SCREEN_WIDTH / 2 - (player_capsule_radius),
                          .y = SCREEN_HEIGHT - 100},
         .speed = 4,
+        .is_player = true,
         .capsule_radius = player_capsule_radius,
         .down_speed = 0,
         .right_speed = 0,
@@ -215,7 +210,9 @@ int main() {
         .level = 0,
         .xp = 0,
         .xp_reward = 0,
-        .levelup_xp_required = 10};
+        .levelup_xp_required = 10,
+        .multishot_enabled = true,
+        .n_projs = 3};
 
     // init enemies
     size_t n_enemies = N_DEFAULT_ENEMIES;

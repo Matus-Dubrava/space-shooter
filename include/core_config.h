@@ -13,6 +13,6 @@
 
 #define DEFAULT_XP_LIFETIME 5
 
-#define N_DEFAULT_ENEMIES 3
+#define N_DEFAULT_ENEMIES 10
 
 #endif

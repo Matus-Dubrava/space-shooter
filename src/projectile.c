@@ -209,6 +209,8 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
         proj->pos.y += proj->speed;
     }
 
+    bool has_been_guided = false;
+
     if (proj->is_guided) {
         // Handle vertical movement for guided projectiles.
         // Guiding doesn't start right away, indicated by the guiding delay.
@@ -217,6 +219,7 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
         if (proj->target && proj->guiding_delay_remaining_frames <= 0) {
             move_left = proj->pos.x > proj->target->pos.x;
             move_right = proj->pos.x < proj->target->pos.x;
+            has_been_guided = true;
         }
 
         // Preserve the direction of guided projectile.
@@ -245,6 +248,13 @@ void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards) {
         proj->guiding_rate *= proj->guiding_multiplier;
     }
 
+    // Use projectile's original horizontal speed if shots are not guided.
+    // This also applies to shots that are marked as guided but their guiding
+    // hasn't been kicked off yet.
+    if (!has_been_guided) {
+        proj->pos.x += proj->right_speed;
+    }
+
     // projectile leaving screen
     if (proj->pos.y > SCREEN_HEIGHT + proj->capsule_radius ||
         proj->pos.y < 0 - proj->capsule_radius) {
@@ -258,36 +268,29 @@ void PROJ_shoot(Actor* actor,
                 bool spawn_below,
                 ProjectileInitArgs* args,
                 DebugCtx* debug_ctx) {
-    if (!actor->ongoing_shoot_action_delay) {
-        if (projectiles->len <= projectiles->capacity) {
-            ClosestEnemy target = {0};
+    if (projectiles->len <= projectiles->capacity) {
+        ClosestEnemy target = {0};
 
-            if (args->is_guided) {
-                find_closest_enemy(actor, enemies, &target);
-                args->target = target.actor;
-            }
-
-            Projectile* proj = PROJ_create_projectile_p(args, debug_ctx);
-
-            // set position of the projectile below or above the actor
-            // who launched it
-            if (spawn_below) {
-                proj->pos.y += actor->capsule_radius;
-            } else {
-                proj->pos.y -= actor->capsule_radius;
-            }
-
-            // register projectile
-            projectiles->items[projectiles->len++] = proj;
-
-            // start shooting delay
-            actor->ongoing_shoot_action_delay = true;
-            actor->shoot_action_delay_remaining_frames =
-                actor->shoot_action_delay_frames;
-        } else {
-            debug_ctx->tot_errors++;
-            fprintf(stderr, "failed to register projectile; array is full\n");
+        if (args->is_guided) {
+            find_closest_enemy(actor, enemies, &target);
+            args->target = target.actor;
         }
+
+        Projectile* proj = PROJ_create_projectile_p(args, debug_ctx);
+
+        // set position of the projectile below or above the actor
+        // who launched it
+        if (spawn_below) {
+            proj->pos.y += actor->capsule_radius;
+        } else {
+            proj->pos.y -= actor->capsule_radius;
+        }
+
+        // register projectile
+        projectiles->items[projectiles->len++] = proj;
+    } else {
+        fprintf(stderr, "failed to register shot, array is full");
+        debug_ctx->tot_errors++;
     }
 }
 
