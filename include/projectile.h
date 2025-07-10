@@ -65,7 +65,8 @@ Projectiles* PROJ_create_projectiles_p(size_t capacity);
 // Free invalidated projectiles.
 // Return 0 if succesful, -1 on error.
 int PROJ_clear_invalid_projectiles(Projectiles* projectiles,
-                                   DebugCtx* debug_ctx);
+                                   DebugCtx* debug_ctx,
+                                   bool is_player_proj);
 
 void PROJ_draw_projectiles(Projectiles* projectiles, Color color);
 
@@ -74,35 +75,27 @@ void PROJ_handle_projectile_collision(Actor* actor,
                                       XPBoxes* xp_boxes,
                                       DebugCtx* debug_ctx);
 
-void PROJ_register(Actor* actor,
-                   Projectiles* projectiles,
-                   bool spawn_below,
-                   ProjectileInitArgs* args,
-                   DebugCtx* debug_ctx);
-
-void PROJ_register_guided(Actor* actor,
-                          Projectiles* projectiles,
-                          bool spawn_below,
-                          float guiding_rate,
-                          uint16_t guiding_delay_frames,
-                          Actor* target,
-                          ProjectileInitArgs* args,
-                          DebugCtx* debug_ctx);
-
 void PROJ_handle_projectile_movement(Projectile* proj, bool shoot_upwards);
 
 void PROJ_shoot(Actor* actor,
                 Projectiles* projectiles,
-                Actors* enemies,
-                bool is_guided,
+                const Actors* enemies,
                 ProjectileInitArgs* args,
                 DebugCtx* debug_ctx);
 
 /*
- * Update timers associated with every projectile. General usage is to call this
- * on tick.
+ * Update timers associated with every projectile. General usage is to call
+ * this on tick.
  * @param projectiles all projectiles
  */
 void PROJ_update_projectiles_timers(Projectiles* projectiles);
+
+void PROJ_get_default_args(Actor* actor,
+                           ProjectileInitArgs* args_out,
+                           bool spawn_below);
+
+void PROJ_get_default_guided_args(Actor* actor,
+                                  ProjectileInitArgs* args_out,
+                                  bool spawn_below);
 
 #endif

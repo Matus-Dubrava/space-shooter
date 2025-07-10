@@ -119,10 +119,11 @@ void generate_enemy_actions(Actor* enemy,
 
     if (projectiles->len < projectiles->capacity) {
         if (GetRandomValue(0, 100) < 75) {
-            const bool is_guided = false;
+            const bool spawn_below = true;
             ProjectileInitArgs args = {0};
-            PROJ_shoot(enemy, projectiles, enemies, is_guided, &args,
-                       debug_ctx);
+            PROJ_get_default_args(enemy, &args, spawn_below);
+            // PROJ_get_default_guided_args(&enemy, &args, spawn_below);
+            PROJ_shoot(enemy, projectiles, enemies, &args, debug_ctx);
         }
     }
 
@@ -134,11 +135,10 @@ void handle_player_actions(Actor* player,
                            Projectiles* projectiles,
                            DebugCtx* debug_ctx) {
     if (IsKeyDown(KEY_SPACE) || IsKeyPressed(KEY_SPACE)) {
-        const bool is_guided = true;
-        const bool is_multishot = true;
-        const uint16_t n_proj = 3;
+        const bool spawn_below = false;
         ProjectileInitArgs args = {0};
-        PROJ_shoot(player, projectiles, enemies, is_guided, &args, debug_ctx);
+        PROJ_get_default_guided_args(player, &args, false);
+        PROJ_shoot(player, projectiles, enemies, &args, debug_ctx);
     }
 
     if (IsKeyPressed(KEY_G)) {
@@ -218,7 +218,7 @@ int main() {
         .levelup_xp_required = 10};
 
     // init enemies
-    size_t n_enemies = 3;
+    size_t n_enemies = 1;
     Actors* enemies = A_create_actors_p(1024, &debug_ctx);
     if (!enemies) {
         exit(EXIT_FAILURE);
@@ -311,13 +311,19 @@ int main() {
         }
 
         // clear pojectiles
-        if (PROJ_clear_invalid_projectiles(player_projectiles, &debug_ctx) !=
-            0) {
-            fprintf(stderr, "failed to clear player projectiles\n");
-        };
-        if (PROJ_clear_invalid_projectiles(enemy_projectiles, &debug_ctx) !=
-            0) {
-            fprintf(stderr, "failed to clear enemy projectiles\n");
+        bool is_player_proj = true;
+        if (player_projectiles->len == player_projectiles->capacity) {
+            if (PROJ_clear_invalid_projectiles(player_projectiles, &debug_ctx,
+                                               is_player_proj) != 0) {
+                fprintf(stderr, "failed to clear player projectiles\n");
+            };
+        }
+        is_player_proj = false;
+        if (enemy_projectiles->len == enemy_projectiles->capacity) {
+            if (PROJ_clear_invalid_projectiles(enemy_projectiles, &debug_ctx,
+                                               is_player_proj) != 0) {
+                fprintf(stderr, "failed to clear enemy projectiles\n");
+            }
         }
 
         // draw
