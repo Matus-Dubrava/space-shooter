@@ -42,7 +42,7 @@ float minf(float a, float b);
  * @param actor actor 2
  * @return Squared distance between actors
  */
-float get_squared_dist(Actor* actor, Actor* other);
+float get_squared_dist(const Actor* actor, const Actor* other);
 
 void check_screen_collisions(float x,
                              float y,
@@ -50,8 +50,8 @@ void check_screen_collisions(float x,
                              float y_offset,
                              ScreenCollisions* screen_collisions_out);
 
-void find_closest_enemy(Actor* player,
-                        Actors* enemies,
+void find_closest_enemy(const Actor* player,
+                        const Actors* enemies,
                         ClosestEnemy* target_out);
 
 #endif

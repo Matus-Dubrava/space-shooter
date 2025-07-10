@@ -30,13 +30,13 @@ void check_screen_collisions(float x,
     screen_collisions_out->top_side = y - y_offset <= 0;
 }
 
-float get_squared_dist(Actor* actor, Actor* other) {
+float get_squared_dist(const Actor* actor, const Actor* other) {
     return (actor->pos.x - other->pos.x) * (actor->pos.x - other->pos.x) +
            (actor->pos.y - other->pos.y) * (actor->pos.y - other->pos.y);
 }
 
-void find_closest_enemy(Actor* player,
-                        Actors* enemies,
+void find_closest_enemy(const Actor* player,
+                        const Actors* enemies,
                         ClosestEnemy* target_out) {
     Actor* target = NULL;
     size_t min_dist = LONG_MAX;
