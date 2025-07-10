@@ -106,15 +106,14 @@ void generate_enemy_actions(Actor* enemy,
         move_actions.move_up = true;
     }
 
-    if (enemy->pos.y < SCREEN_HEIGHT / 2 && (0, 100) < 50) {
+    if (enemy->pos.y < SCREEN_HEIGHT / 2 && GetRandomValue(0, 100) < 50) {
         move_actions.move_down = true;
     }
 
-    if (GetRandomValue(0, 100) < 50) {
+    int rand_val = GetRandomValue(0, 100);
+    if (rand_val < 30) {
         move_actions.move_left = true;
-    }
-
-    if (GetRandomValue(0, 100) < 50) {
+    } else if (rand_val > 70) {
         move_actions.move_right = true;
     }
 
